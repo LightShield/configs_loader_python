@@ -1,6 +1,7 @@
 """Tests for configsloader — verifies API contract."""
 
 import os
+from enum import Enum
 from pathlib import Path
 
 import pytest
@@ -166,6 +167,42 @@ class TestPerFieldSections:
         config = SimpleConfig.load(args=[], file=str(config_file), section="server")
         assert config.name == "from-server-section"
         assert config.port == 9999
+
+
+class PermissionTier(str, Enum):
+    NOTHING = "nothing"
+    ASK = "ask"
+    AUTOPILOT = "autopilot"
+
+
+class EnumConfig(ConfigsLoader):
+    permission: PermissionTier = Field(
+        default=PermissionTier.ASK, flags=["--permission"], section="guild"
+    )
+    name: str = Field(default="test")
+
+
+class TestEnumSupport:
+    """str Enum types are coerced from string values."""
+
+    def test_enum_default_value(self) -> None:
+        config = EnumConfig.load(args=[], file=None)
+        assert config.permission == PermissionTier.ASK
+        assert isinstance(config.permission, PermissionTier)
+
+    def test_enum_from_cli_string(self) -> None:
+        config = EnumConfig.load(args=["--permission", "autopilot"], file=None)
+        assert config.permission == PermissionTier.AUTOPILOT
+
+    def test_enum_from_config_file(self, tmp_path: Path) -> None:
+        config_file = tmp_path / "config.toml"
+        config_file.write_text('[guild]\npermission = "nothing"\n')
+        config = EnumConfig.load(args=[], file=str(config_file))
+        assert config.permission == PermissionTier.NOTHING
+
+    def test_enum_invalid_value_raises(self) -> None:
+        with pytest.raises(ValueError):
+            EnumConfig.load(args=["--permission", "invalid"], file=None)
 
 
 class TestResolutionOrder:
