@@ -21,16 +21,24 @@ One declaration per config field. Value resolved from: **CLI flag > env var > co
 from configsloader import ConfigsLoader, Field
 
 class AppConfig(ConfigsLoader):
+    # Fields declare which TOML section they live in
     model: str = Field(
         default="gemma4-4b",
         flags=["--model", "-m"],
-        env="GUILD_MODEL",
+        env="APP_MODEL",
+        section="provider",
         description="LLM model to use",
     )
     temperature: float = Field(
         default=0.7,
         flags=["--temperature", "-t"],
+        section="provider",
         description="Sampling temperature",
+    )
+    max_workers: int = Field(
+        default=1,
+        section="app",
+        description="Max concurrent workers",
     )
     verbose: bool = Field(
         default=False,
@@ -42,11 +50,20 @@ class AppConfig(ConfigsLoader):
 config = AppConfig.load(
     args=sys.argv[1:],        # CLI arguments
     file="config.toml",       # TOML config file (optional)
-    section="provider",       # Section within the TOML file
 )
 
-print(config.model)        # resolved value
-print(config.temperature)  # resolved value
+print(config.model)        # from [provider] section, CLI, or env
+print(config.max_workers)  # from [app] section or default
+```
+
+With `config.toml`:
+```toml
+[provider]
+model = "gemma4-26b"
+temperature = 0.5
+
+[app]
+max_workers = 4
 ```
 
 ## Features (Current)
@@ -57,7 +74,8 @@ print(config.temperature)  # resolved value
 - [x] Required field validation
 - [x] Auto-generated `--help`
 - [x] TOML config file support
-- [x] Section-scoped config file loading
+- [x] Per-field section declarations (each field knows its TOML section)
+- [x] Global section fallback for simple configs
 
 ## Missing (Future)
 

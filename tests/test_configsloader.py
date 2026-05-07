@@ -124,6 +124,50 @@ class TestHelp:
         assert exc_info.value.code == 0
 
 
+class MultiSectionConfig(ConfigsLoader):
+    model: str = Field(default="default-model", section="provider", flags=["--model"])
+    base_url: str = Field(default="http://localhost:11434", section="provider")
+    max_agents: int = Field(default=1, section="guild")
+    permission: str = Field(default="ask", section="guild", flags=["--permission"])
+
+
+class TestPerFieldSections:
+    """Fields can declare which TOML section they belong to."""
+
+    def test_fields_read_from_their_own_section(self, tmp_path: Path) -> None:
+        config_file = tmp_path / "config.toml"
+        config_file.write_text(
+            '[provider]\nmodel = "gemma4"\nbase_url = "http://remote:11434"\n\n'
+            '[guild]\nmax_agents = 4\npermission = "autopilot"\n'
+        )
+        config = MultiSectionConfig.load(args=[], file=str(config_file))
+        assert config.model == "gemma4"
+        assert config.base_url == "http://remote:11434"
+        assert config.max_agents == 4
+        assert config.permission == "autopilot"
+
+    def test_cli_overrides_section_values(self, tmp_path: Path) -> None:
+        config_file = tmp_path / "config.toml"
+        config_file.write_text('[provider]\nmodel = "from-file"\n')
+        config = MultiSectionConfig.load(args=["--model", "from-cli"], file=str(config_file))
+        assert config.model == "from-cli"
+
+    def test_missing_section_uses_default(self, tmp_path: Path) -> None:
+        config_file = tmp_path / "config.toml"
+        config_file.write_text('[guild]\nmax_agents = 2\n')
+        config = MultiSectionConfig.load(args=[], file=str(config_file))
+        assert config.model == "default-model"  # provider section missing, uses default
+        assert config.max_agents == 2
+
+    def test_global_section_param_as_fallback(self, tmp_path: Path) -> None:
+        """Fields without per-field section use the global section param."""
+        config_file = tmp_path / "config.toml"
+        config_file.write_text('[server]\nname = "from-server-section"\nport = 9999\n')
+        config = SimpleConfig.load(args=[], file=str(config_file), section="server")
+        assert config.name == "from-server-section"
+        assert config.port == 9999
+
+
 class TestResolutionOrder:
     """CLI > env > file > default."""
 

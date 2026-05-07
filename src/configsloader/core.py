@@ -24,6 +24,7 @@ class FieldDescriptor:
     default: Any = None
     flags: list[str] = dc_field(default_factory=list)
     env: str | None = None
+    section: str | None = None
     description: str = ""
     required: bool = False
 
@@ -32,6 +33,7 @@ def Field(
     default: Any = None,
     flags: list[str] | None = None,
     env: str | None = None,
+    section: str | None = None,
     description: str = "",
     required: bool = False,
 ) -> Any:
@@ -41,6 +43,7 @@ def Field(
         default: Default value if no source provides one.
         flags: CLI flags (e.g., ["--model", "-m"]).
         env: Environment variable name.
+        section: TOML section this field lives in (e.g., "provider").
         description: Human-readable description for --help.
         required: If True, raises if no value found from any source.
 
@@ -51,6 +54,7 @@ def Field(
         default=default,
         flags=flags or [],
         env=env,
+        section=section,
         description=description,
         required=required,
     )
@@ -106,7 +110,8 @@ class ConfigsLoader(metaclass=_ConfigMeta):
         Args:
             args: CLI arguments (default: sys.argv[1:]).
             file: Path to TOML config file.
-            section: Section within the TOML file to read from.
+            section: Global section override. If set, all fields without a
+                per-field section use this. Per-field sections take priority.
 
         Returns:
             An instance with all fields resolved.
@@ -122,7 +127,7 @@ class ConfigsLoader(metaclass=_ConfigMeta):
             cls._print_help()
             raise SystemExit(0)
 
-        file_values = cls._load_file(file, section)
+        file_data = cls._load_file_raw(file)
         env_values = cls._load_env()
         cli_values = cls._parse_cli(args)
 
@@ -130,6 +135,8 @@ class ConfigsLoader(metaclass=_ConfigMeta):
         type_hints = get_type_hints(cls)
 
         for name, descriptor in cls._fields.items():
+            field_section = descriptor.section or section
+            file_values = cls._extract_section(file_data, field_section)
             raw = _resolve_value(name, descriptor, cli_values, env_values, file_values)
             target_type = type_hints.get(name, str)
             resolved[name] = _coerce(raw, target_type, name)
@@ -137,18 +144,22 @@ class ConfigsLoader(metaclass=_ConfigMeta):
         return cls(**resolved)
 
     @classmethod
-    def _load_file(cls, file: str | Path | None, section: str | None) -> dict[str, Any]:
-        """Load values from a TOML file."""
+    def _load_file_raw(cls, file: str | Path | None) -> dict[str, Any]:
+        """Load the entire TOML file as a dict."""
         if file is None:
             return {}
         path = Path(file)
         if not path.is_file():
             return {}
         with open(path, "rb") as f:
-            data = tomllib.load(f)
-        if section and section in data:
-            data = data[section]
-        return data
+            return tomllib.load(f)
+
+    @classmethod
+    def _extract_section(cls, data: dict[str, Any], section: str | None) -> dict[str, Any]:
+        """Extract a section from TOML data, or return top-level if no section."""
+        if not section:
+            return data
+        return data.get(section, {})
 
     @classmethod
     def _load_env(cls) -> dict[str, str]:
