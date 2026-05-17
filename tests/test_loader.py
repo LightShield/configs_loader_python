@@ -255,3 +255,129 @@ class TestPresetIntegration:
             args=["--model", "cli_val", "--preset", str(preset_file)],
         )
         assert config.model == "cli_val"
+
+
+@pytest.mark.unit
+class TestLoaderDefaultArgs:
+    """Tests for loader.py lines that use sys.argv fallback."""
+
+    def test_load_uses_sys_argv_when_args_is_none(self, monkeypatch):
+        """loader.py:300 — args=None defaults to sys.argv[1:]."""
+        import sys
+        monkeypatch.setattr(sys, "argv", ["prog", "--host", "from-argv"])
+        config = IsSetConfig.load(args=None)
+        assert config.host == "from-argv"
+
+
+@pytest.mark.unit
+class TestLoaderCoercionErrorInNested:
+    """Tests for loader.py:201-202 — coercion errors in nested loading."""
+
+    def test_nested_coercion_error_raises(self):
+        """loader.py:201-202 — coercion error inside nested config raises ValueError."""
+        from configsloader import ConfigsLoader, Field
+
+        class Parent(ConfigsLoader):
+            class child(ConfigsLoader):
+                port: int = Field(default=8080, flags=["--child.port"])
+
+        with pytest.raises(ValueError, match="port"):
+            Parent.load(args=["--child.port", "not_a_number"])
+
+
+@pytest.mark.unit
+class TestLoaderFileKeyResolution:
+    """Tests for loader.py:242, 244, 248 — _get_file_key logic."""
+
+    def test_file_key_strips_section_prefix_from_flag(self, tmp_path):
+        """loader.py:242, 244, 248 — when field has section and flags, derive local key."""
+        from configsloader import ConfigsLoader, Field
+
+        class SectionFlagConfig(ConfigsLoader):
+            db_host: str = Field(
+                default="localhost",
+                flags=["--backend.db.host"],
+                section="backend.db",
+            )
+
+        config_file = tmp_path / "config.toml"
+        config_file.write_text('[backend.db]\nhost = "from-file"\n')
+        config = SectionFlagConfig.load(args=[], files=[str(config_file)])
+        assert config.db_host == "from-file"
+
+
+@pytest.mark.unit
+class TestLoaderResolveValueFileFallback:
+    """Tests for loader.py:557 — file_key != name fallback."""
+
+    def test_file_value_found_by_name_when_file_key_misses(self, tmp_path):
+        """loader.py:557 — when file_key doesn't match but name does in file data."""
+        from configsloader import ConfigsLoader, Field
+        from configsloader.loader import _resolve_value
+        from configsloader.field import FieldDescriptor
+
+        # Simulate: file_key is "something" but name is "host" and file has "host"
+        descriptor = FieldDescriptor(default="default_val")
+        sources = {
+            "cli": {},
+            "env": {},
+            "preset": {},
+            "file": {"host": "file_value"},
+        }
+        value, was_set = _resolve_value("host", descriptor, sources, file_key="nonexistent_key")
+        assert value == "file_value"
+        assert was_set is True
+
+
+@pytest.mark.unit
+class TestNestedFieldResolutionFromEnv:
+    """Tests for loader.py:242 — nested field resolved from env source."""
+
+    def test_nested_field_resolved_from_env(self, monkeypatch):
+        """loader.py:242 — nested field resolved from env variable."""
+        from configsloader import ConfigsLoader, Field
+
+        class Parent(ConfigsLoader):
+            class child(ConfigsLoader):
+                host: str = Field(default="localhost", flags=["--child.host"], env="CHILD_HOST")
+
+        monkeypatch.setenv("CHILD_HOST", "env-host")
+        config = Parent.load(args=[])
+        assert config.child.host == "env-host"
+
+
+@pytest.mark.unit
+class TestNestedFieldResolutionFromPreset:
+    """Tests for loader.py:244 — nested field resolved from preset source."""
+
+    def test_nested_field_resolved_from_preset(self, tmp_path, monkeypatch):
+        """loader.py:244 — nested field resolved from preset source."""
+        from configsloader import ConfigsLoader, Field
+
+        class Parent(ConfigsLoader):
+            class child(ConfigsLoader):
+                host: str = Field(default="localhost", flags=["--child.host"])
+
+        preset_file = tmp_path / "preset.toml"
+        preset_file.write_text('"child.host" = "preset-host"\n')
+        monkeypatch.delenv("CHILD_HOST", raising=False)
+        config = Parent.load(args=["--preset", str(preset_file)])
+        assert config.child.host == "preset-host"
+
+
+@pytest.mark.unit
+class TestNestedFieldResolutionFromFile:
+    """Tests for loader.py:248 — nested field resolved from config file."""
+
+    def test_nested_field_resolved_from_file(self, tmp_path):
+        """loader.py:248 — nested field resolved from config file section."""
+        from configsloader import ConfigsLoader, Field
+
+        class Parent(ConfigsLoader):
+            class child(ConfigsLoader):
+                host: str = Field(default="localhost", flags=["--child.host"])
+
+        config_file = tmp_path / "config.toml"
+        config_file.write_text('[child]\nhost = "file-host"\n')
+        config = Parent.load(args=[], files=[str(config_file)])
+        assert config.child.host == "file-host"

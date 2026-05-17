@@ -184,3 +184,31 @@ class TestReservedFlags:
         with pytest.raises(Exception) as exc_info:
             parse_cli([], fields)
         assert "--preset" in str(exc_info.value) or "reserved" in str(exc_info.value).lower()
+
+
+@pytest.mark.unit
+class TestCLIPositionalArgSkipped:
+    """Tests for positional arguments (non-flag tokens)."""
+
+    def test_positional_arg_not_a_flag_skipped(self):
+        """cli.py:164 — non-flag token that isn't a value for known flag is skipped."""
+        fields = [_make_field("host", ["--host"])]
+        result = parse_cli(["positional_arg", "--host", "localhost"], fields)
+        assert result["host"] == "localhost"
+
+
+@pytest.mark.unit
+class TestCLIBoolFlagExplicitTrueValue:
+    """Tests for boolean flag with explicit true value."""
+
+    def test_bool_flag_with_explicit_true(self):
+        """cli.py:180 — bool flag with 'true' as next token returns True via BOOL_TRUE_VALUES."""
+        fields = [_make_field("verbose", ["--verbose"], field_type=bool, is_bool=True)]
+        result = parse_cli(["--verbose", "true"], fields)
+        assert result["verbose"] is True
+
+    def test_bool_flag_with_explicit_yes(self):
+        """cli.py:180 — bool flag with 'yes' as next token returns True."""
+        fields = [_make_field("verbose", ["--verbose"], field_type=bool, is_bool=True)]
+        result = parse_cli(["--verbose", "yes"], fields)
+        assert result["verbose"] is True

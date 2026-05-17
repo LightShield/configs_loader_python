@@ -229,3 +229,19 @@ class TestResolutionOrder:
         config_file.write_text('timeout = 100\n')
         config = EnvConfig.load(args=[], file=str(config_file))
         assert config.timeout == 100  # file wins over default (30)
+
+
+class TestCoreInit:
+    """Tests for core.py __init__ method covering default value assignment."""
+
+    def test_init_assigns_defaults_for_missing_values(self) -> None:
+        """core.py:31-33 — __init__ uses descriptor.default when no value passed."""
+        config = SimpleConfig()
+        assert config.name == "test"
+
+    def test_init_assigns_provided_values(self) -> None:
+        """core.py:31-33 — __init__ uses provided keyword values."""
+        config = SimpleConfig(name="custom", port=9999, debug=True)
+        assert config.name == "custom"
+        assert config.port == 9999
+        assert config.debug is True

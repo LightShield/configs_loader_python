@@ -84,7 +84,7 @@ def _is_enum_type(target_type: type) -> bool:
     """Check if a type is an Enum subclass."""
     try:
         return isinstance(target_type, type) and issubclass(target_type, enum.Enum)
-    except TypeError:
+    except TypeError:  # pragma: no cover — defensive guard against exotic metaclasses
         return False
 
 

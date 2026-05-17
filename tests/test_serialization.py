@@ -120,3 +120,46 @@ class TestPrintConfigTomlFormat:
         output = captured.out
         # TOML string values should be quoted
         assert '"prod-server"' in output or "'prod-server'" in output
+
+
+@pytest.mark.unit
+class TestFormatValueEdgeCases:
+    """Tests for _format_value covering different types."""
+
+    def test_format_value_int(self):
+        """serialization.py:28 — int formatted as string."""
+        from configsloader.serialization import _format_value
+        assert _format_value(42) == "42"
+
+    def test_format_value_float(self):
+        """serialization.py:31 — float formatted as string."""
+        from configsloader.serialization import _format_value
+        assert _format_value(3.14) == "3.14"
+
+    def test_format_value_non_standard_type(self):
+        """serialization.py:31 — non-standard types formatted with quotes."""
+        from configsloader.serialization import _format_value
+        result = _format_value([1, 2, 3])
+        assert result.startswith('"')
+
+
+@pytest.mark.unit
+class TestPrintConfigWithSections:
+    """Tests for serialization with section grouping."""
+
+    def test_print_config_verbose_with_sections(self, capsys):
+        """serialization.py:87-91 — fields with sections produce [section] headers."""
+        from configsloader import ConfigsLoader, Field
+
+        class SectionedConfig(ConfigsLoader):
+            host: str = Field(default="localhost", flags=["--host"], section="server")
+            port: int = Field(default=8080, flags=["--port"], section="server")
+            model: str = Field(default="gpt4", flags=["--model"], section="provider")
+
+        with pytest.raises(SystemExit):
+            SectionedConfig.load(args=["--print-config-verbose"])
+
+        captured = capsys.readouterr()
+        output = captured.out
+        assert "[server]" in output
+        assert "[provider]" in output

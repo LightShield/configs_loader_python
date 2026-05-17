@@ -102,3 +102,75 @@ class TestPresetResolution:
         fields = [_make_field("host", ["--host"])]
         result = load_preset("dev", fields, preset_dir=str(preset_dir))
         assert result["host"] == "dev-host"
+
+    def test_preset_resolved_from_directory_json(self, tmp_path):
+        """preset.py:49-56 — preset name resolved with .json extension."""
+        preset_dir = tmp_path / "presets"
+        preset_dir.mkdir()
+        preset_file = preset_dir / "staging.json"
+        preset_file.write_text('{"host": "staging-host"}')
+        fields = [_make_field("host", ["--host"])]
+        result = load_preset("staging", fields, preset_dir=str(preset_dir))
+        assert result["host"] == "staging-host"
+
+    def test_preset_resolved_from_directory_bare_name(self, tmp_path):
+        """preset.py:55-56 — preset resolved as bare file in directory (no extension)."""
+        from configsloader.sources.preset import _resolve_preset_path
+        preset_dir = tmp_path / "presets"
+        preset_dir.mkdir()
+        # Create a file named "custom.toml" to NOT match, and a bare file "custom"
+        # The code tries .toml, .json, then bare name in order
+        # So we need the bare name to be the only match
+        bare_file = preset_dir / "custom"
+        bare_file.write_text('key = "value"\n')
+        # Calling _resolve_preset_path directly to test the bare path resolution
+        result = _resolve_preset_path("custom", preset_dir=str(preset_dir))
+        assert result == str(bare_file)
+
+    def test_preset_path_traversal_raises(self, tmp_path):
+        """preset.py:77 — path traversal attempt raises ValueError."""
+        from configsloader.sources.preset import _check_path_traversal
+        from pathlib import Path
+        preset_dir = tmp_path / "presets"
+        preset_dir.mkdir()
+        outside = tmp_path / "outside.toml"
+        outside.write_text('host = "evil"\n')
+        with pytest.raises(ValueError, match="escapes preset directory"):
+            _check_path_traversal(outside, preset_dir.resolve(), "../outside")
+
+    def test_preset_not_found_with_preset_dir(self, tmp_path):
+        """preset.py:49-56 — preset not found in directory raises FileNotFoundError."""
+        preset_dir = tmp_path / "presets"
+        preset_dir.mkdir()
+        fields = [_make_field("host", ["--host"])]
+        with pytest.raises(FileNotFoundError, match="searched in"):
+            load_preset("nonexistent", fields, preset_dir=str(preset_dir))
+
+
+@pytest.mark.unit
+class TestPresetKeyMatchByFlag:
+    """Tests for preset key matching via flags."""
+
+    def test_preset_key_matched_by_flag_stripped(self, tmp_path):
+        """preset.py:112->106 — field key not in data, but flag-stripped key is."""
+        preset_file = tmp_path / "prod.toml"
+        preset_file.write_text('model = "from-preset"\n')
+        fields = [_make_field("model_name", ["--model"])]
+        result = load_preset(str(preset_file), fields)
+        assert result["model_name"] == "from-preset"
+
+    def test_preset_key_not_matched_skipped(self, tmp_path):
+        """preset.py:112->106 — field with no matching key in preset data is skipped."""
+        preset_file = tmp_path / "prod.toml"
+        preset_file.write_text('other_key = "value"\n')
+        fields = [_make_field("host", ["--host"])]
+        result = load_preset(str(preset_file), fields)
+        assert "host" not in result
+
+    def test_field_with_no_flags_skips_flag_lookup(self, tmp_path):
+        """preset.py:112->106 — field with empty flags list skips flag-based lookup."""
+        preset_file = tmp_path / "prod.toml"
+        preset_file.write_text('other = "value"\n')
+        fields = [{"name": "host", "flags": [], "type": str}]
+        result = load_preset(str(preset_file), fields)
+        assert "host" not in result

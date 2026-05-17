@@ -241,3 +241,86 @@ class TestHelpSectionGrouping:
         assert "server" in output.lower() or "Server" in output
         assert "provider" in output.lower() or "Provider" in output
         assert "logging" in output.lower() or "Logging" in output
+
+
+@pytest.mark.unit
+class TestHelpFormatTypeName:
+    """Tests for _format_type_name edge cases."""
+
+    def test_format_type_name_without_name_attr(self):
+        """help.py:61 — type without __name__ uses str() fallback."""
+        from configsloader.help import _format_type_name
+
+        class FakeType:
+            """Object without __name__ attribute."""
+            def __str__(self):
+                return "custom_type"
+
+        # Remove __name__ if it has one (classes get __name__ from type)
+        obj = FakeType()
+        # Instances don't have __name__ by default
+        assert not hasattr(obj, "__name__")
+        result = _format_type_name(obj)
+        assert "custom_type" in result
+
+    def test_format_default_none_returns_empty(self):
+        """help.py:67 — None default returns empty string."""
+        from configsloader.help import _format_default
+        result = _format_default(None, str)
+        assert result == ""
+
+
+@pytest.mark.unit
+class TestHelpAutoColors:
+    """Tests for color auto-detection."""
+
+    def test_colors_auto_detect_non_tty(self, monkeypatch):
+        """help.py:191->194 — use_colors=None triggers auto-detect."""
+        from configsloader.help import generate_help
+        monkeypatch.delenv("NO_COLOR", raising=False)
+        monkeypatch.delenv("FORCE_COLOR", raising=False)
+        # generate_help with use_colors=None triggers _should_use_colors()
+        result = generate_help(HelpConfig._fields, {"host": str, "port": int, "model": str, "verbose": bool}, mode="navigation", use_colors=None)
+        assert "Usage:" in result
+
+
+@pytest.mark.unit
+class TestHelpFieldWithNoneDefault:
+    """Tests for field with default=None in help output (no default string)."""
+
+    def test_field_with_none_default_omits_default_str(self, monkeypatch):
+        """help.py:127->130 — field with default=None skips default_str formatting."""
+        from configsloader.help import generate_help
+        from configsloader import ConfigsLoader, Field
+
+        class NoneDefaultConfig(ConfigsLoader):
+            token: str = Field(required=True, flags=["--token"], description="Auth token")
+
+        monkeypatch.setenv("NO_COLOR", "1")
+        result = generate_help(
+            NoneDefaultConfig._fields,
+            {"token": str},
+            mode="all",
+            use_colors=False,
+        )
+        assert "--token" in result
+        assert "default:" not in result
+
+
+@pytest.mark.unit
+class TestHelpGroupNoMatch:
+    """Tests for --help <group> when group has no matching fields."""
+
+    def test_help_group_with_no_matching_fields(self, monkeypatch):
+        """help.py:308->314 — group name with no matching fields produces no field lines."""
+        from configsloader.help import generate_help
+        monkeypatch.setenv("NO_COLOR", "1")
+        result = generate_help(
+            HelpConfig._fields,
+            {"host": str, "port": int, "model": str, "verbose": bool},
+            mode="nonexistent_group",
+            use_colors=False,
+        )
+        # Should have usage line but no field lines (no matching group)
+        assert "Usage:" in result
+        assert "--host" not in result

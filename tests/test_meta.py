@@ -8,6 +8,7 @@ class definition time.
 import pytest
 
 from configsloader import ConfigsLoader, Field
+from configsloader.field import FieldDescriptor
 
 
 @pytest.mark.unit
@@ -147,3 +148,38 @@ class TestDuplicateFlagDetection:
 
         assert "host" in GoodConfig._fields
         assert "port" in GoodConfig._fields
+
+
+@pytest.mark.unit
+class TestMetaclassInheritance:
+    """Tests for metaclass inheritance and field propagation."""
+
+    def test_base_without_fields_attr_skipped(self):
+        """meta.py:52 — bases without _fields attribute are skipped."""
+        class PlainBase:
+            pass
+
+        # This should not raise; PlainBase doesn't have _fields
+        class MyConfig(PlainBase, ConfigsLoader):
+            host: str = Field(default="localhost", flags=["--host"])
+
+        assert "host" in MyConfig._fields
+
+    def test_annotated_field_without_descriptor_gets_default_descriptor(self):
+        """meta.py:65 — annotation with non-FieldDescriptor value gets wrapped."""
+        class MyConfig(ConfigsLoader):
+            count: int = 42
+
+        assert isinstance(MyConfig._fields["count"], FieldDescriptor)
+        assert MyConfig._fields["count"].default == 42
+
+    def test_child_inherits_fields_from_parent(self):
+        """meta.py:56 — child class inherits _fields from parent ConfigsLoader."""
+        class ParentConfig(ConfigsLoader):
+            host: str = Field(default="localhost", flags=["--host"])
+
+        class ChildConfig(ParentConfig):
+            port: int = Field(default=8080, flags=["--port"])
+
+        assert "host" in ChildConfig._fields
+        assert "port" in ChildConfig._fields

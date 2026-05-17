@@ -187,3 +187,67 @@ class TestTypeCoercionFailure:
         assert "2 error" in error_message
         assert "host" in error_message
         assert "port" in error_message
+
+
+@pytest.mark.unit
+class TestValidatorSkipsNoneValues:
+    """Validator is skipped when value is None."""
+
+    def test_validator_not_called_on_none_value(self):
+        """validation.py:60 — validator skipped when field value is None."""
+        from configsloader.validation import run_validators
+        from configsloader.field import FieldDescriptor
+
+        fields = {"port": FieldDescriptor(validator=lambda v: v > 0)}
+        errors = run_validators(fields, {"port": None}, None)
+        assert errors == []
+
+
+@pytest.mark.unit
+class TestValidatorExceptionHandling:
+    """Validator raising TypeError/ValueError/AttributeError is caught."""
+
+    def test_validator_raising_typeerror_caught(self):
+        """validation.py:71-74 — TypeError from validator is caught and reported."""
+        from configsloader.validation import run_validators
+        from configsloader.field import FieldDescriptor
+
+        def bad_validator(v):
+            raise TypeError("wrong type")
+
+        fields = {"port": FieldDescriptor(validator=bad_validator)}
+        errors = run_validators(fields, {"port": 42}, None)
+        assert len(errors) == 1
+        assert "wrong type" in errors[0]
+
+    def test_validator_raising_attributeerror_caught(self):
+        """validation.py:71-74 — AttributeError from validator is caught."""
+        from configsloader.validation import run_validators
+        from configsloader.field import FieldDescriptor
+
+        def attr_validator(v):
+            raise AttributeError("no attr")
+
+        fields = {"name": FieldDescriptor(validator=attr_validator)}
+        errors = run_validators(fields, {"name": "test"}, None)
+        assert len(errors) == 1
+        assert "no attr" in errors[0]
+
+
+@pytest.mark.unit
+class TestCrossFieldValidatorDetection:
+    """Tests for _is_cross_field_validator edge cases."""
+
+    def test_is_cross_field_validator_with_uninspectable(self):
+        """validation.py:94-95 — uninspectable callable returns False."""
+        from configsloader.validation import _is_cross_field_validator
+
+        class Uninspectable:
+            def __call__(self):
+                pass
+            @property
+            def __signature__(self):
+                raise ValueError("no signature")
+
+        result = _is_cross_field_validator(Uninspectable())
+        assert result is False

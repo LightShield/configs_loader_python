@@ -175,3 +175,36 @@ class TestMixedFormats:
         assert result["host"] == "json-host"
         # port from toml should still be present (not overridden)
         assert result["port"] == 3000
+
+
+@pytest.mark.unit
+class TestExplicitUnsupportedFormat:
+    """Tests for unsupported format passed explicitly."""
+
+    def test_unsupported_explicit_format_raises(self, tmp_path):
+        """file.py:105 — explicitly passing unsupported format raises ValueError."""
+        config_file = tmp_path / "config.toml"
+        config_file.write_text('key = "value"\n')
+        with pytest.raises(ValueError, match="Unsupported format"):
+            load_file(str(config_file), file_format="xml")
+
+
+@pytest.mark.unit
+class TestStrictFileMode:
+    """Tests for strict mode in load_files."""
+
+    def test_strict_mode_raises_for_missing_file(self, tmp_path):
+        """file.py:151 — strict=True raises FileNotFoundError for missing file."""
+        missing = str(tmp_path / "nonexistent.toml")
+        with pytest.raises(FileNotFoundError, match="Config file not found"):
+            load_files([missing], strict=True)
+
+    def test_deep_merge_nested_dicts(self, tmp_path):
+        """file.py:121 — deep merge combines nested dicts correctly."""
+        base = tmp_path / "base.toml"
+        base.write_text('[server]\nhost = "base"\nport = 3000\n')
+        override = tmp_path / "override.toml"
+        override.write_text('[server]\nhost = "override"\n')
+        result = load_files([str(base), str(override)])
+        assert result["server"]["host"] == "override"
+        assert result["server"]["port"] == 3000
