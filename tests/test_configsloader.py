@@ -8,6 +8,8 @@ import pytest
 
 from configsloader import ConfigsLoader, Field
 
+pytestmark = pytest.mark.unit
+
 
 class SimpleConfig(ConfigsLoader):
     name: str = Field(default="test", flags=["--name", "-n"], description="App name")
@@ -32,7 +34,7 @@ class TestDefaults:
         assert config.port == 8080
         assert config.debug is False
 
-    def test_field_types_are_correct(self) -> None:
+    def test_load_returns_correctly_typed_fields(self) -> None:
         config = SimpleConfig.load(args=[], file=None)
         assert isinstance(config.name, str)
         assert isinstance(config.port, int)
@@ -45,7 +47,7 @@ class TestCLI:
         assert config.name == "prod"
         assert config.port == 9090
 
-    def test_short_flags_work(self) -> None:
+    def test_parses_short_flags(self) -> None:
         config = SimpleConfig.load(args=["-n", "short", "-p", "1234"], file=None)
         assert config.name == "short"
         assert config.port == 1234
@@ -85,7 +87,7 @@ class TestConfigFile:
         assert config.name == "from-file"
         assert config.port == 5555
 
-    def test_section_scoped_loading(self, tmp_path: Path) -> None:
+    def test_loads_fields_from_scoped_section(self, tmp_path: Path) -> None:
         config_file = tmp_path / "config.toml"
         config_file.write_text('[server]\nname = "scoped"\nport = 7777\n')
         config = SimpleConfig.load(args=[], file=str(config_file), section="server")
@@ -185,7 +187,7 @@ class EnumConfig(ConfigsLoader):
 class TestEnumSupport:
     """str Enum types are coerced from string values."""
 
-    def test_enum_default_value(self) -> None:
+    def test_enum_uses_default_value(self) -> None:
         config = EnumConfig.load(args=[], file=None)
         assert config.permission == PermissionTier.ASK
         assert isinstance(config.permission, PermissionTier)
@@ -208,7 +210,7 @@ class TestEnumSupport:
 class TestResolutionOrder:
     """CLI > env > file > default."""
 
-    def test_full_priority_chain(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_cli_overrides_env_overrides_file(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         config_file = tmp_path / "config.toml"
         config_file.write_text('timeout = 100\n')
         monkeypatch.setenv("MY_TIMEOUT", "200")

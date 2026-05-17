@@ -7,7 +7,6 @@ Handles multi-file layering where later files override earlier ones.
 from __future__ import annotations
 
 import json
-import os
 import tomllib
 from pathlib import Path
 from typing import Any
@@ -93,7 +92,7 @@ def load_file(path: str, file_format: str = FORMAT_AUTO) -> dict[str, Any]:
         ValueError: If the file format is unsupported or parsing fails.
         FileNotFoundError: If the file does not exist.
     """
-    path = os.path.expanduser(path)
+    path = str(Path(path).expanduser())
 
     if file_format == FORMAT_AUTO:
         file_format = _detect_format(path)
@@ -125,21 +124,33 @@ def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any
     return result
 
 
-def load_files(paths: list[str]) -> dict[str, Any]:
+def load_files(
+    paths: list[str],
+    strict: bool = False,
+) -> dict[str, Any]:
     """Load and layer multiple config files.
 
-    Later files override earlier ones. Missing files are silently skipped.
+    Later files override earlier ones. Missing files are silently skipped
+    unless strict mode is enabled.
 
     Args:
         paths: List of file paths to load in order.
+        strict: If True, raise FileNotFoundError for missing files.
 
     Returns:
         Merged dict of config values.
+
+    Raises:
+        FileNotFoundError: If strict=True and a file does not exist.
     """
     result: dict[str, Any] = {}
     for path in paths:
-        path = os.path.expanduser(path)
+        path = str(Path(path).expanduser())
         if not Path(path).is_file():
+            if strict:
+                raise FileNotFoundError(
+                    f"Config file not found: '{path}'"
+                )
             continue
         data = load_file(path)
         result = _deep_merge(result, data)

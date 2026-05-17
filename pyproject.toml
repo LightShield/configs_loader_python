@@ -12,6 +12,7 @@ dependencies = []
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0",
+    "pytest-cov>=4.0",
     "ruff>=0.4",
 ]
 
@@ -20,6 +21,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "--cov=configsloader --cov-branch"
 markers = [
     "unit: unit tests for individual modules",
     "integration: integration tests across multiple modules",

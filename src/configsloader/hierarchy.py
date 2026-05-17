@@ -76,7 +76,6 @@ def _collect_nested(
     """
     from configsloader.core import ConfigsLoader as _Base
 
-    # Check for sub-nested classes
     for attr_name in dir(cls):
         attr = getattr(cls, attr_name, None)
         if (
@@ -87,7 +86,6 @@ def _collect_nested(
         ):
             _collect_nested(attr, f"{prefix}.{attr_name.lower()}", result)
 
-    # Collect this class's own fields
     fields = getattr(cls, "_fields", {})
     for name, descriptor in fields.items():
         key = f"{prefix}.{name}"

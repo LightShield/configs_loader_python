@@ -5,7 +5,6 @@
 """
 
 from configsloader.field import Field, FieldDescriptor
-from configsloader.meta import _ConfigMeta
 from configsloader.coercion import coerce
 from configsloader.core import ConfigsLoader
 

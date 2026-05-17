@@ -20,7 +20,6 @@ from configsloader.constants import (
 
 __all__ = ["generate_help", "print_help_and_exit"]
 
-# ANSI color codes
 _BOLD = "\033[1m"
 _DIM = "\033[2m"
 _CYAN = "\033[36m"
@@ -110,25 +109,20 @@ def _format_field_line(
     Returns:
         Formatted help line string.
     """
-    # Flags
     flags = descriptor.flags if descriptor.flags else [f"--{name}"]
     flags_str = ", ".join(flags)
     flags_str = _colorize(flags_str, _GREEN, use_colors)
 
-    # Type
     type_hint = type_hints.get(name, str)
     type_name = _format_type_name(type_hint)
     type_str = _colorize(f"<{type_name}>", _DIM, use_colors)
 
-    # Required tag
     required_str = ""
     if descriptor.required:
         required_str = _colorize(" [Required]", _RED, use_colors)
 
-    # Description
     desc = descriptor.description or ""
 
-    # Default
     default_str = _format_default(descriptor.default, type_hint)
     if default_str:
         default_str = _colorize(f" ({default_str})", _DIM, use_colors)
@@ -136,7 +130,7 @@ def _format_field_line(
     return f"  {flags_str} {type_str}{required_str} {desc}{default_str}"
 
 
-def _build_group_tree(sections: list[str]) -> dict[str, Any]:
+def _organize_fields_by_group(sections: list[str]) -> dict[str, Any]:
     """Build a tree structure from dotted section names.
 
     Args:
@@ -160,7 +154,7 @@ def _render_tree(tree: dict[str, Any], indent: int = 0) -> str:
     """Render a tree dict as indented text.
 
     Args:
-        tree: Nested dict from _build_group_tree.
+        tree: Nested dict from _organize_fields_by_group.
         indent: Current indentation level.
 
     Returns:
@@ -280,7 +274,7 @@ def _generate_groups(
     """Generate groups hierarchy tree."""
     groups = _group_fields_by_section(fields)
     sections = list(groups.keys())
-    tree = _build_group_tree(sections)
+    tree = _organize_fields_by_group(sections)
     lines: list[str] = []
     usage = _colorize(f"Usage: {program_name} [options]", _BOLD, use_colors)
     lines.append(usage)

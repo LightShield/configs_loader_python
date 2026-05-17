@@ -39,7 +39,7 @@ def _validate_reserved(fields: list[dict[str, Any]]) -> None:
                 )
 
 
-def _build_flag_map(fields: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+def _create_flag_lookup(fields: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     """Build mapping from flag strings to their field-info dicts.
 
     Args:
@@ -76,16 +76,17 @@ def parse_cli(
         Dict mapping field names to their parsed string values.
 
     Raises:
-        ValueError: On reserved flag conflict or unknown flags in error mode.
+        ValueError: On reserved flag conflict, unknown flags in error mode,
+            or missing value for a non-boolean flag.
     """
     _validate_reserved(fields)
-    flag_map = _build_flag_map(fields)
+    flag_map = _create_flag_lookup(fields)
     result: dict[str, Any] = {}
     unknown: list[str] = []
 
     _parse_args_loop(args, flag_map, result, unknown)
 
-    _handle_unknown(unknown, unknown_flags)
+    _report_unknown_flags(unknown, unknown_flags)
     return result
 
 
@@ -105,12 +106,15 @@ def _consume_known_flag(
 
     Returns:
         Updated index past the consumed token(s).
+
+    Raises:
+        ValueError: If a non-boolean flag is missing its value.
     """
     if not field.get("is_bool", False):
-        if i + 1 < len(args):
+        if i + 1 < len(args) and not _is_flag(args[i + 1]):
             result[field["name"]] = args[i + 1]
             return i + 2
-        return i + 1
+        raise ValueError(f"Flag '{args[i]}' requires a value")
 
     result[field["name"]] = _parse_bool_flag(args, i)
     all_bool_values = BOOL_TRUE_VALUES | BOOL_FALSE_VALUES
@@ -179,7 +183,7 @@ def _parse_bool_flag(args: list[str], idx: int) -> bool:
     return True
 
 
-def _handle_unknown(unknown: list[str], mode: str) -> None:
+def _report_unknown_flags(unknown: list[str], mode: str) -> None:
     """Handle unknown flags based on mode.
 
     Args:
@@ -194,4 +198,4 @@ def _handle_unknown(unknown: list[str], mode: str) -> None:
     if mode == UNKNOWN_FLAG_ERROR:
         raise ValueError(f"Unknown CLI flags: {', '.join(unknown)}")
     elif mode == UNKNOWN_FLAG_WARN:
-        print(f"Warning: unknown CLI flags: {', '.join(unknown)}", file=sys.stderr)
+        sys.stderr.write(f"Warning: unknown CLI flags: {', '.join(unknown)}\n")

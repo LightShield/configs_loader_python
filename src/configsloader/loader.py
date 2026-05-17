@@ -12,13 +12,19 @@ from typing import Any, get_type_hints
 
 from configsloader.coercion import coerce
 from configsloader.constants import (
-    DEFAULT_SECTION,
     HELP_MODE_NAVIGATION,
+    SOURCE_CLI,
+    SOURCE_ENV,
+    SOURCE_FILE,
+    SOURCE_PRESET,
     UNKNOWN_FLAG_ERROR,
 )
 from configsloader.help import print_help_and_exit
 from configsloader.hierarchy import find_nested_configs, resolve_dotted_section
 from configsloader.serialization import print_config
+
+# Source modules imported directly (acceptable: bounded set of 4 sources,
+# extensibility via file format plugins rather than source plugins)
 from configsloader.sources.cli import parse_cli
 from configsloader.sources.env import load_env
 from configsloader.sources.file import load_files
@@ -28,7 +34,7 @@ from configsloader.validation import collect_errors, run_validators, validate_re
 __all__ = ["load_config"]
 
 
-def _build_field_infos(cls: type) -> list[dict[str, Any]]:
+def _extract_field_metadata(cls: type) -> list[dict[str, Any]]:
     """Build field-info dicts for source modules from class fields.
 
     Includes fields from nested ConfigsLoader subclasses.
@@ -51,7 +57,6 @@ def _build_field_infos(cls: type) -> list[dict[str, Any]]:
             "is_bool": target_type is bool,
         })
 
-    # Add fields from nested classes
     nested_fields = _collect_nested_fields(cls)
     for nf in nested_fields:
         infos.append(nf["info"])
@@ -75,7 +80,6 @@ def _collect_nested_fields(cls: type, prefix: str = "") -> list[dict[str, Any]]:
     nested = find_nested_configs(cls, _Base)
     for attr_name, attr in nested.items():
         nested_prefix = f"{prefix}{attr_name}" if not prefix else f"{prefix}.{attr_name}"
-        # Get this nested class's own fields
         nested_hints = get_type_hints(attr)
         for name, descriptor in attr._fields.items():
             target_type = nested_hints.get(name, str)
@@ -92,7 +96,6 @@ def _collect_nested_fields(cls: type, prefix: str = "") -> list[dict[str, Any]]:
                 "descriptor": descriptor,
                 "type": target_type,
             })
-        # Recurse into sub-nested classes
         results.extend(_collect_nested_fields(attr, nested_prefix))
     return results
 
@@ -123,7 +126,6 @@ def _extract_help_mode(args: list[str]) -> str | None:
     """
     for i, arg in enumerate(args):
         if arg in ("--help", "-h"):
-            # Check if next arg is a mode (not another flag)
             if i + 1 < len(args) and not args[i + 1].startswith("-"):
                 return args[i + 1]
             return HELP_MODE_NAVIGATION
@@ -140,7 +142,7 @@ def _has_print_config_verbose(args: list[str]) -> bool:
     return "--print-config-verbose" in args
 
 
-def _build_nested_instances(
+def _populate_nested_configs(
     cls: type,
     sources: dict[str, dict[str, Any]],
     file_data: dict[str, Any],
@@ -189,7 +191,6 @@ def _load_nested(
     instance._is_set = {}
     errors: list[str] = []
 
-    # Resolve this class's own fields
     for name, descriptor in cls._fields.items():
         value, was_set = _resolve_nested_field(
             name, descriptor, prefix, sources, file_data
@@ -202,7 +203,6 @@ def _load_nested(
         setattr(instance, name, value)
         instance._is_set[name] = was_set
 
-    # Recursively handle sub-nested classes
     nested = find_nested_configs(cls, _Base)
     for attr_name, attr in nested.items():
         sub_instance = _load_nested(
@@ -210,7 +210,6 @@ def _load_nested(
         )
         setattr(instance, attr_name, sub_instance)
 
-    # Collect errors (will raise if any)
     collect_errors(errors)
 
     return instance
@@ -237,14 +236,13 @@ def _resolve_nested_field(
     """
     dotted_key = f"{prefix}.{name}"
 
-    if dotted_key in sources.get("cli", {}):
-        return sources["cli"][dotted_key], True
-    if dotted_key in sources.get("env", {}):
-        return sources["env"][dotted_key], True
-    if dotted_key in sources.get("preset", {}):
-        return sources["preset"][dotted_key], True
+    if dotted_key in sources.get(SOURCE_CLI, {}):
+        return sources[SOURCE_CLI][dotted_key], True
+    if dotted_key in sources.get(SOURCE_ENV, {}):
+        return sources[SOURCE_ENV][dotted_key], True
+    if dotted_key in sources.get(SOURCE_PRESET, {}):
+        return sources[SOURCE_PRESET][dotted_key], True
 
-    # Check file data using dotted section
     section_data = resolve_dotted_section(file_data, prefix)
     if name in section_data:
         return section_data[name], True
@@ -252,7 +250,7 @@ def _resolve_nested_field(
     return descriptor.default, False
 
 
-def _handle_special_flags(
+def _process_help_and_print_config(
     cls: type,
     args: list[str],
     resolved: dict[str, Any],
@@ -302,26 +300,21 @@ def load_config(
         args = sys.argv[1:]
 
     type_hints = get_type_hints(cls)
-    field_infos = _build_field_infos(cls)
+    field_infos = _extract_field_metadata(cls)
 
-    # Handle help early
     help_mode = _extract_help_mode(args)
     if help_mode is not None:
         print_help_and_exit(cls._fields, type_hints, mode=help_mode)
 
-    # Load all sources
     sources, file_data = _load_all_sources(cls, args, files, file, field_infos)
 
-    # Resolve all fields
     resolved, is_set, coercion_errors = _resolve_all_fields(
         cls, sources, file_data, section, type_hints
     )
 
-    # Handle --print-config flags
-    _handle_special_flags(cls, args, resolved, type_hints)
+    _process_help_and_print_config(cls, args, resolved, type_hints)
 
-    # Build instance and run validation
-    instance = _build_instance(cls, resolved, is_set, sources, file_data)
+    instance = _create_config_instance(cls, resolved, is_set, sources, file_data)
     _run_validation(cls, resolved, is_set, instance, coercion_errors)
 
     return instance
@@ -339,38 +332,33 @@ def _load_all_sources(
     Returns:
         Tuple of (sources dict, file_data dict).
     """
-    # Determine unknown_flags setting from Meta
     meta = getattr(cls, "Meta", None)
     unknown_flags = (
         getattr(meta, "unknown_flags", UNKNOWN_FLAG_ERROR)
         if meta else UNKNOWN_FLAG_ERROR
     )
 
-    # Parse CLI (includes nested fields)
     cli_values = parse_cli(args, field_infos, unknown_flags=unknown_flags)
-
-    # Load env vars
     env_values = load_env(field_infos)
 
-    # Load preset if specified
     preset_path = _extract_preset_arg(args)
     preset_values: dict[str, Any] = {}
     if preset_path:
         preset_dir = getattr(meta, "preset_dir", None) if meta else None
         preset_values = load_preset(preset_path, field_infos, preset_dir=preset_dir)
 
-    # Load config files
     file_paths: list[str] = []
     if files:
         file_paths = files
     elif file:
         file_paths = [str(file)]
-    file_data = load_files(file_paths) if file_paths else {}
+    strict_files = getattr(meta, "strict", False) if meta else False
+    file_data = load_files(file_paths, strict=strict_files) if file_paths else {}
 
     sources: dict[str, dict[str, Any]] = {
-        "cli": cli_values,
-        "env": env_values,
-        "preset": preset_values,
+        SOURCE_CLI: cli_values,
+        SOURCE_ENV: env_values,
+        SOURCE_PRESET: preset_values,
     }
     return sources, file_data
 
@@ -405,10 +393,10 @@ def _resolve_single_field(
     file_key = _get_file_key(name, descriptor, field_section)
 
     field_sources: dict[str, dict[str, Any]] = {
-        "cli": sources["cli"],
-        "env": sources["env"],
-        "preset": sources["preset"],
-        "file": field_values,
+        SOURCE_CLI: sources[SOURCE_CLI],
+        SOURCE_ENV: sources[SOURCE_ENV],
+        SOURCE_PRESET: sources[SOURCE_PRESET],
+        SOURCE_FILE: field_values,
     }
     raw, was_set = _resolve_value(name, descriptor, field_sources, file_key)
 
@@ -455,7 +443,7 @@ def _resolve_all_fields(
     return resolved, is_set, coercion_errors
 
 
-def _build_instance(
+def _create_config_instance(
     cls: type,
     resolved: dict[str, Any],
     is_set: dict[str, bool],
@@ -479,8 +467,7 @@ def _build_instance(
         setattr(instance, name, value)
     instance._is_set = is_set
 
-    # Build nested instances
-    nested = _build_nested_instances(cls, sources, file_data)
+    nested = _populate_nested_configs(cls, sources, file_data)
     for attr_name, nested_inst in nested.items():
         setattr(instance, attr_name, nested_inst)
 
@@ -527,7 +514,6 @@ def _get_file_key(name: str, descriptor: Any, section: str | None) -> str:
         The key string to use in file data lookup.
     """
     if section and descriptor.flags:
-        # Try to derive key from first flag: --backend.db.host -> host
         first_flag = descriptor.flags[0].lstrip("-")
         prefix = section + "."
         if first_flag.startswith(prefix):
@@ -553,10 +539,10 @@ def _resolve_value(
     Returns:
         Tuple of (resolved value, was_set flag).
     """
-    cli = sources.get("cli", {})
-    env = sources.get("env", {})
-    preset = sources.get("preset", {})
-    file = sources.get("file", {})
+    cli = sources.get(SOURCE_CLI, {})
+    env = sources.get(SOURCE_ENV, {})
+    preset = sources.get(SOURCE_PRESET, {})
+    file = sources.get(SOURCE_FILE, {})
 
     if name in cli:
         return cli[name], True
@@ -564,11 +550,9 @@ def _resolve_value(
         return env[name], True
     if name in preset:
         return preset[name], True
-    # Check file using file_key (may be different from name for dotted sections)
     lookup_key = file_key if file_key else name
     if lookup_key in file:
         return file[lookup_key], True
-    # Also try the field name itself as fallback
     if file_key and name in file:
         return file[name], True
     return descriptor.default, False

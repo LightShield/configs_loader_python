@@ -6,7 +6,6 @@ Supports verbose (all values) and non-verbose (only non-default) modes.
 
 from __future__ import annotations
 
-import sys
 from typing import Any
 
 __all__ = ["print_config"]
@@ -79,13 +78,11 @@ def print_config(
     groups = _group_by_section(fields, resolved_values, verbose)
     lines: list[str] = []
 
-    # Print top-level fields (no section) first
     if "" in groups:
         for name, value in groups[""]:
             lines.append(f"{name} = {_format_value(value)}")
         del groups[""]
 
-    # Print sectioned fields
     for section in sorted(groups.keys()):
         if lines:
             lines.append("")

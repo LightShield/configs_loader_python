@@ -6,7 +6,6 @@ Supports TOML and JSON formats with auto-detection.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Any
 
@@ -27,8 +26,9 @@ def _resolve_preset_path(preset: str, preset_dir: str | None = None) -> str:
 
     Raises:
         FileNotFoundError: If the preset file cannot be found.
+        ValueError: If the resolved preset path escapes the preset directory.
     """
-    preset = os.path.expanduser(preset)
+    preset = str(Path(preset).expanduser())
 
     # If it's already a full path that exists, use it
     if Path(preset).is_file():
@@ -36,25 +36,45 @@ def _resolve_preset_path(preset: str, preset_dir: str | None = None) -> str:
 
     # If a preset_dir is given, try resolving there
     if preset_dir:
-        preset_dir = os.path.expanduser(preset_dir)
+        preset_dir = str(Path(preset_dir).expanduser())
         dir_path = Path(preset_dir)
-        # Try with .toml extension
+
+        # Guard against path traversal
+        resolved_dir = dir_path.resolve()
+
         toml_path = dir_path / f"{preset}.toml"
         if toml_path.is_file():
+            _check_path_traversal(toml_path, resolved_dir, preset)
             return str(toml_path)
-        # Try with .json extension
         json_path = dir_path / f"{preset}.json"
         if json_path.is_file():
+            _check_path_traversal(json_path, resolved_dir, preset)
             return str(json_path)
-        # Try bare name
         bare_path = dir_path / preset
         if bare_path.is_file():
+            _check_path_traversal(bare_path, resolved_dir, preset)
             return str(bare_path)
 
     raise FileNotFoundError(
         f"Preset file not found: '{preset}'"
         + (f" (searched in '{preset_dir}')" if preset_dir else "")
     )
+
+
+def _check_path_traversal(path: Path, preset_dir_resolved: Path, name: str) -> None:
+    """Verify that a resolved path stays within the preset directory.
+
+    Args:
+        path: The path to check.
+        preset_dir_resolved: The resolved preset directory.
+        name: The original preset name (for error messages).
+
+    Raises:
+        ValueError: If the path escapes the preset directory.
+    """
+    resolved = path.resolve()
+    if not str(resolved).startswith(str(preset_dir_resolved)):
+        raise ValueError(f"Preset path escapes preset directory: {name}")
 
 
 def load_preset(
@@ -77,19 +97,17 @@ def load_preset(
 
     Raises:
         FileNotFoundError: If the preset file cannot be found.
+        ValueError: If the preset path escapes the preset directory.
     """
     path = _resolve_preset_path(preset, preset_dir)
     data = load_file(path)
 
-    # Build mapping from preset key -> field name
     result: dict[str, Any] = {}
     for field in fields:
         name = field["name"]
-        # Check field name directly
         if name in data:
             result[name] = data[name]
             continue
-        # Check first flag stripped of leading dashes
         flags = field.get("flags", [])
         if flags:
             key = flags[0].lstrip("-")

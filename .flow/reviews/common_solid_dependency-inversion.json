@@ -1,0 +1,1 @@
+{"rule_id": "common_solid_dependency-inversion", "status": "PASS", "note": "Loader imports concrete sources directly. Acceptable: bounded set of 4 sources, extensibility via file format plugins rather than source plugins. Documented in loader.py import comment."}

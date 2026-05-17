@@ -20,6 +20,10 @@ __all__ = [
     "HELP_MODE_REQUIRED",
     "HELP_MODE_GROUPS",
     "DEFAULT_SECTION",
+    "SOURCE_CLI",
+    "SOURCE_ENV",
+    "SOURCE_PRESET",
+    "SOURCE_FILE",
 ]
 
 RESERVED_FLAGS: frozenset[str] = frozenset(
@@ -43,3 +47,8 @@ HELP_MODE_REQUIRED: str = "required"
 HELP_MODE_GROUPS: str = "groups"
 
 DEFAULT_SECTION: str = "general"
+
+SOURCE_CLI: str = "cli"
+SOURCE_ENV: str = "env"
+SOURCE_PRESET: str = "preset"
+SOURCE_FILE: str = "file"
