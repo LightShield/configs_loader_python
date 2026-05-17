@@ -1,0 +1,62 @@
+{"rule_id": "general_review", "status": "FAIL", "violations": [
+  {
+    "category": "security",
+    "severity": "medium",
+    "file": "src/configsloader/sources/file.py",
+    "description": "Path traversal via os.path.expanduser: user-supplied file paths are expanded but never validated against a safe base directory. An attacker who controls the `file`/`files` or `--preset` argument can read arbitrary files (e.g., '../../etc/shadow'). While this is somewhat inherent to a config loader, there is no opt-in sandboxing or warning in the docs."
+  },
+  {
+    "category": "security",
+    "severity": "medium",
+    "file": "src/configsloader/sources/preset.py",
+    "description": "Preset name path traversal: _resolve_preset_path joins user input (preset name) with preset_dir using Path division without sanitizing '..' components. A preset value like '../../etc/passwd' with a .json extension could read arbitrary files relative to preset_dir."
+  },
+  {
+    "category": "edge_case",
+    "severity": "high",
+    "file": "src/configsloader/sources/file.py",
+    "description": "load_files silently skips missing files with no feedback. If a user misconfigures a path (typo), they get silent fallback to defaults with no warning. This is a common source of hard-to-debug production issues. Should at least offer an optional strict mode or log a warning."
+  },
+  {
+    "category": "edge_case",
+    "severity": "medium",
+    "file": "src/configsloader/coercion.py",
+    "description": "coerce() returns None for None values without checking if the field is required. This means a required field with None default passes coercion silently and only fails later at validate_required. Not a bug per se, but the separation means coercion errors and required-field errors can occur in the same batch with confusing ordering."
+  },
+  {
+    "category": "design",
+    "severity": "medium",
+    "file": "src/configsloader/loader.py",
+    "description": "_handle_special_flags checks --print-config-verbose and --print-config sequentially without early return after the first match. If both flags are present, print_config will be called twice (though the first call raises SystemExit, so the second is unreachable). The logic is confusing—each branch should have an explicit return or the second should be 'elif'."
+  },
+  {
+    "category": "edge_case",
+    "severity": "medium",
+    "file": "src/configsloader/sources/cli.py",
+    "description": "_consume_known_flag for non-boolean fields silently returns i+1 (no value consumed) when a flag is the last argument with no value following it. The user passes '--port' with no value, and the field is silently skipped from cli_values entirely rather than raising an error about the missing argument value."
+  },
+  {
+    "category": "api_consistency",
+    "severity": "low",
+    "file": "src/configsloader/core.py",
+    "description": "ConfigsLoader.__init__ accepts **values but ignores _is_set tracking—all fields are marked as not-set when constructed manually via __init__. The .load() path bypasses __init__ entirely (uses __new__). This means __init__ and load() produce instances with different _is_set semantics, which could confuse users constructing instances for testing."
+  },
+  {
+    "category": "edge_case",
+    "severity": "low",
+    "file": "src/configsloader/validation.py",
+    "description": "run_validators skips validation when value is None. This means a non-required field with a validator that should reject None (e.g., validating format of an optional field that was explicitly set to a None-coerced value) will never have its validator called. The validator contract is unclear."
+  },
+  {
+    "category": "performance",
+    "severity": "low",
+    "file": "src/configsloader/loader.py",
+    "description": "find_nested_configs is called three times during load_config: once in _build_field_infos (via _collect_nested_fields), once in _build_nested_instances, and once inside _load_nested for each nested class. For deeply nested configs this is redundant repeated class introspection. Not a real perf issue for typical configs but is wasteful."
+  },
+  {
+    "category": "security",
+    "severity": "low",
+    "file": "src/configsloader/sources/file.py",
+    "description": "JSON deserialization via json.load is safe (no code execution), and TOML via tomllib is also safe. No pickle/yaml.unsafe_load usage found. This is correct."
+  }
+]}

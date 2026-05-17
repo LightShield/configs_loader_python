@@ -1,0 +1,1 @@
+{"rule_id": "python_error-handling_no-print", "status": "FAIL", "violations": [{"file": "src/configsloader/sources/cli.py", "line": 197, "description": "print() used in sources/cli.py for warning output. This is a library source module, not a help/serialization output module. Should use logging.warning() or a callback mechanism instead."}]}

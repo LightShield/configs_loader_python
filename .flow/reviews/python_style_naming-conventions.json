@@ -1,0 +1,1 @@
+{"rule_id": "python_style_naming-conventions", "status": "FAIL", "violations": [{"file": "src/configsloader/field.py", "line": 40, "description": "Function 'Field' uses PascalCase instead of snake_case. Even though it mirrors a factory/constructor pattern, PEP 8 naming conventions require snake_case for functions."}]}
