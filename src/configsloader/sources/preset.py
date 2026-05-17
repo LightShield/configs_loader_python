@@ -6,6 +6,7 @@ Supports TOML and JSON formats with auto-detection.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -27,12 +28,15 @@ def _resolve_preset_path(preset: str, preset_dir: str | None = None) -> str:
     Raises:
         FileNotFoundError: If the preset file cannot be found.
     """
+    preset = os.path.expanduser(preset)
+
     # If it's already a full path that exists, use it
     if Path(preset).is_file():
         return preset
 
     # If a preset_dir is given, try resolving there
     if preset_dir:
+        preset_dir = os.path.expanduser(preset_dir)
         dir_path = Path(preset_dir)
         # Try with .toml extension
         toml_path = dir_path / f"{preset}.toml"

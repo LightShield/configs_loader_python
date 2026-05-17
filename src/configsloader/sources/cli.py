@@ -10,12 +10,15 @@ from __future__ import annotations
 import sys
 from typing import Any
 
+from configsloader.constants import (
+    BOOL_FALSE_VALUES,
+    BOOL_TRUE_VALUES,
+    RESERVED_FLAGS,
+    UNKNOWN_FLAG_ERROR,
+    UNKNOWN_FLAG_WARN,
+)
+
 __all__ = ["parse_cli"]
-
-RESERVED_FLAGS = {"--help", "-h", "--preset", "--print-config", "--print-config-verbose"}
-
-_BOOL_TRUE = {"true", "1", "yes"}
-_BOOL_FALSE = {"false", "0", "no"}
 
 
 def _validate_reserved(fields: list[dict[str, Any]]) -> None:
@@ -60,7 +63,7 @@ def _is_flag(token: str) -> bool:
 def parse_cli(
     args: list[str],
     fields: list[dict[str, Any]],
-    unknown_flags: str = "error",
+    unknown_flags: str = UNKNOWN_FLAG_ERROR,
 ) -> dict[str, Any]:
     """Parse CLI arguments and return resolved values.
 
@@ -80,6 +83,26 @@ def parse_cli(
     result: dict[str, Any] = {}
     unknown: list[str] = []
 
+    _parse_args_loop(args, flag_map, result, unknown)
+
+    _handle_unknown(unknown, unknown_flags)
+    return result
+
+
+def _parse_args_loop(
+    args: list[str],
+    flag_map: dict[str, dict[str, Any]],
+    result: dict[str, Any],
+    unknown: list[str],
+) -> None:
+    """Main loop that processes CLI tokens into result values.
+
+    Args:
+        args: Raw CLI argument list.
+        flag_map: Mapping from flag string to field-info dict.
+        result: Accumulator dict for parsed values.
+        unknown: Accumulator list for unknown flag strings.
+    """
     i = 0
     while i < len(args):
         token = args[i]
@@ -97,7 +120,7 @@ def parse_cli(
             if is_bool:
                 result[field["name"]] = _parse_bool_flag(args, i)
                 # Advance past explicit bool value if present
-                if i + 1 < len(args) and args[i + 1].lower() in (_BOOL_TRUE | _BOOL_FALSE):
+                if i + 1 < len(args) and args[i + 1].lower() in (BOOL_TRUE_VALUES | BOOL_FALSE_VALUES):
                     i += 2
                 else:
                     i += 1
@@ -117,9 +140,6 @@ def parse_cli(
         else:
             i += 1
 
-    _handle_unknown(unknown, unknown_flags)
-    return result
-
 
 def _parse_bool_flag(args: list[str], idx: int) -> bool:
     """Determine boolean value for a flag at given index.
@@ -133,9 +153,9 @@ def _parse_bool_flag(args: list[str], idx: int) -> bool:
     """
     if idx + 1 < len(args):
         next_val = args[idx + 1].lower()
-        if next_val in _BOOL_TRUE:
+        if next_val in BOOL_TRUE_VALUES:
             return True
-        if next_val in _BOOL_FALSE:
+        if next_val in BOOL_FALSE_VALUES:
             return False
     return True
 
@@ -152,7 +172,7 @@ def _handle_unknown(unknown: list[str], mode: str) -> None:
     """
     if not unknown:
         return
-    if mode == "error":
+    if mode == UNKNOWN_FLAG_ERROR:
         raise ValueError(f"Unknown CLI flags: {', '.join(unknown)}")
-    elif mode == "warn":
+    elif mode == UNKNOWN_FLAG_WARN:
         print(f"Warning: unknown CLI flags: {', '.join(unknown)}", file=sys.stderr)

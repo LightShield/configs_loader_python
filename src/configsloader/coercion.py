@@ -9,9 +9,9 @@ from __future__ import annotations
 import enum
 from typing import Any
 
-__all__ = ["coerce"]
+from configsloader.constants import BOOL_TRUE_VALUES
 
-_BOOL_TRUE = {"true", "1", "yes"}
+__all__ = ["coerce"]
 
 
 def coerce(value: Any, target_type: type, field_name: str) -> Any:
@@ -27,16 +27,43 @@ def coerce(value: Any, target_type: type, field_name: str) -> Any:
 
     Raises:
         ValueError: If coercion fails.
+        TypeError: If target_type is a generic or unsupported type.
     """
     if value is None:
         return None
-    if isinstance(value, target_type):
-        return value
+    try:
+        if isinstance(value, target_type):
+            return value
+    except TypeError:
+        pass  # Generic types (list[str]) don't support isinstance
     if target_type is bool:
         return _coerce_bool(value)
     if _is_enum_type(target_type):
         return _coerce_enum(value, target_type, field_name)
+    if _is_unsupported_type(target_type):
+        raise TypeError(
+            f"Type '{target_type}' is not supported for coercion of field "
+            f"'{field_name}'. Supported types: str, int, float, bool, Enum subclasses."
+        )
     return _coerce_primitive(value, target_type, field_name)
+
+
+def _is_unsupported_type(target_type: type) -> bool:
+    """Check if a type is unsupported for coercion (e.g., generic types).
+
+    Args:
+        target_type: The type to check.
+
+    Returns:
+        True if the type is not supported.
+    """
+    # Check for generic types (list[str], dict[str, int], etc.)
+    if hasattr(target_type, "__origin__"):
+        return True
+    # Check that it's a callable type constructor (str, int, float, etc.)
+    if not isinstance(target_type, type):
+        return True
+    return False
 
 
 def _coerce_bool(value: Any) -> bool:
@@ -49,7 +76,7 @@ def _coerce_bool(value: Any) -> bool:
         True for 'true'/'1'/'yes' (case-insensitive), False otherwise.
     """
     if isinstance(value, str):
-        return value.lower() in _BOOL_TRUE
+        return value.lower() in BOOL_TRUE_VALUES
     return bool(value)
 
 

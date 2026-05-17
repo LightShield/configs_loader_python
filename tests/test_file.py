@@ -75,14 +75,14 @@ class TestFormatAutoDetection:
         """AC-07.1: .toml extension auto-detected and parsed as TOML."""
         config_file = tmp_path / "app.toml"
         config_file.write_text('key = "value"\n')
-        result = load_file(str(config_file), format="auto")
+        result = load_file(str(config_file), file_format="auto")
         assert result["key"] == "value"
 
     def test_json_extension_detected(self, tmp_path):
         """AC-07.2: .json extension auto-detected and parsed as JSON."""
         config_file = tmp_path / "app.json"
         config_file.write_text(json.dumps({"key": "value"}))
-        result = load_file(str(config_file), format="auto")
+        result = load_file(str(config_file), file_format="auto")
         assert result["key"] == "value"
 
     def test_unsupported_extension_raises(self, tmp_path):
@@ -90,7 +90,7 @@ class TestFormatAutoDetection:
         config_file = tmp_path / "app.yaml"
         config_file.write_text("key: value\n")
         with pytest.raises(Exception) as exc_info:
-            load_file(str(config_file), format="auto")
+            load_file(str(config_file), file_format="auto")
         assert "unsupported" in str(exc_info.value).lower() or "yaml" in str(exc_info.value).lower()
 
 
@@ -107,7 +107,7 @@ class TestExplicitFormatOverride:
         """AC-08.1: File named .txt parsed as TOML when format='toml' specified."""
         config_file = tmp_path / "config.txt"
         config_file.write_text('key = "value"\n')
-        result = load_file(str(config_file), format="toml")
+        result = load_file(str(config_file), file_format="toml")
         assert result["key"] == "value"
 
 

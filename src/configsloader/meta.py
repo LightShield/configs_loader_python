@@ -9,15 +9,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from configsloader.constants import RESERVED_FLAGS
 from configsloader.field import FieldDescriptor
 
 
 __all__ = ["_ConfigMeta"]
-
-
-_RESERVED_FLAGS: frozenset[str] = frozenset(
-    ["--help", "-h", "--preset", "--print-config", "--print-config-verbose"]
-)
 
 
 class _ConfigMeta(type):
@@ -27,6 +23,7 @@ class _ConfigMeta(type):
     - No field uses reserved flags (--help, -h, --preset, etc.)
     - No two fields share the same flag
     - Type annotations are preserved for coercion
+    - Fields are inherited from parent classes
     """
 
     def __new__(
@@ -48,9 +45,17 @@ class _ConfigMeta(type):
         Raises:
             ValueError: If reserved or duplicate flags are detected.
         """
+        # Collect from parent classes first, then override with current class
         fields: dict[str, FieldDescriptor] = {}
-        annotations = namespace.get("__annotations__", {})
+        for base in bases:
+            if hasattr(base, "_fields"):
+                for fname, fdesc in base._fields.items():
+                    # Skip private/internal fields from the base ConfigsLoader
+                    if not fname.startswith("_"):
+                        fields[fname] = fdesc
 
+        # Then process current class annotations (overrides parents)
+        annotations = namespace.get("__annotations__", {})
         for field_name in annotations:
             value = namespace.get(field_name)
             if isinstance(value, FieldDescriptor):
@@ -79,10 +84,10 @@ def _validate_reserved_flags(fields: dict[str, FieldDescriptor]) -> None:
     """
     for field_name, descriptor in fields.items():
         for flag in descriptor.flags:
-            if flag in _RESERVED_FLAGS:
+            if flag in RESERVED_FLAGS:
                 raise ValueError(
                     f"Field '{field_name}' uses reserved flag '{flag}'. "
-                    f"Reserved flags: {sorted(_RESERVED_FLAGS)}"
+                    f"Reserved flags: {sorted(RESERVED_FLAGS)}"
                 )
 
 

@@ -10,6 +10,14 @@ import os
 import sys
 from typing import Any
 
+from configsloader.constants import (
+    DEFAULT_SECTION,
+    HELP_MODE_ALL,
+    HELP_MODE_GROUPS,
+    HELP_MODE_NAVIGATION,
+    HELP_MODE_REQUIRED,
+)
+
 __all__ = ["generate_help", "print_help_and_exit"]
 
 # ANSI color codes
@@ -78,7 +86,7 @@ def _group_fields_by_section(
     """
     groups: dict[str, list[tuple[str, Any]]] = {}
     for name, descriptor in fields.items():
-        section = getattr(descriptor, "section", None) or "general"
+        section = getattr(descriptor, "section", None) or DEFAULT_SECTION
         if section not in groups:
             groups[section] = []
         groups[section].append((name, descriptor))
@@ -189,13 +197,13 @@ def generate_help(
     if use_colors is None:
         use_colors = _should_use_colors()
 
-    if mode == "navigation":
+    if mode == HELP_MODE_NAVIGATION:
         return _generate_navigation(fields, use_colors, program_name)
-    elif mode == "all":
+    elif mode == HELP_MODE_ALL:
         return _generate_all(fields, type_hints, use_colors, program_name)
-    elif mode == "required":
+    elif mode == HELP_MODE_REQUIRED:
         return _generate_required(fields, type_hints, use_colors, program_name)
-    elif mode == "groups":
+    elif mode == HELP_MODE_GROUPS:
         return _generate_groups(fields, use_colors, program_name)
     else:
         return _generate_group(fields, type_hints, mode, use_colors, program_name)

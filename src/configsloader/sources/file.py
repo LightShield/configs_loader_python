@@ -7,9 +7,12 @@ Handles multi-file layering where later files override earlier ones.
 from __future__ import annotations
 
 import json
+import os
 import tomllib
 from pathlib import Path
 from typing import Any
+
+from configsloader.constants import FORMAT_AUTO, FORMAT_JSON, FORMAT_TOML
 
 __all__ = ["load_file", "load_files"]
 
@@ -28,13 +31,13 @@ def _detect_format(path: str) -> str:
     """
     suffix = Path(path).suffix.lower()
     if suffix == ".toml":
-        return "toml"
+        return FORMAT_TOML
     elif suffix == ".json":
-        return "json"
+        return FORMAT_JSON
     else:
         raise ValueError(
             f"Unsupported file format '{suffix}' for '{path}'. "
-            f"Use format='toml' or format='json' explicitly."
+            f"Use file_format='toml' or file_format='json' explicitly."
         )
 
 
@@ -76,12 +79,12 @@ def _load_json(path: str) -> dict[str, Any]:
         raise ValueError(f"Invalid JSON in '{path}': {e}") from e
 
 
-def load_file(path: str, format: str = "auto") -> dict[str, Any]:
+def load_file(path: str, file_format: str = FORMAT_AUTO) -> dict[str, Any]:
     """Load a single config file.
 
     Args:
         path: Path to the config file.
-        format: File format ('auto', 'toml', or 'json').
+        file_format: File format ('auto', 'toml', or 'json').
 
     Returns:
         Parsed dict of config values.
@@ -90,15 +93,17 @@ def load_file(path: str, format: str = "auto") -> dict[str, Any]:
         ValueError: If the file format is unsupported or parsing fails.
         FileNotFoundError: If the file does not exist.
     """
-    if format == "auto":
-        format = _detect_format(path)
+    path = os.path.expanduser(path)
 
-    if format == "toml":
+    if file_format == FORMAT_AUTO:
+        file_format = _detect_format(path)
+
+    if file_format == FORMAT_TOML:
         return _load_toml(path)
-    elif format == "json":
+    elif file_format == FORMAT_JSON:
         return _load_json(path)
     else:
-        raise ValueError(f"Unsupported format: '{format}'")
+        raise ValueError(f"Unsupported format: '{file_format}'")
 
 
 def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
@@ -133,6 +138,7 @@ def load_files(paths: list[str]) -> dict[str, Any]:
     """
     result: dict[str, Any] = {}
     for path in paths:
+        path = os.path.expanduser(path)
         if not Path(path).is_file():
             continue
         data = load_file(path)
