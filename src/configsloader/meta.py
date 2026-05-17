@@ -48,11 +48,12 @@ class _ConfigMeta(type):
         # Collect from parent classes first, then override with current class
         fields: dict[str, FieldDescriptor] = {}
         for base in bases:
-            if hasattr(base, "_fields"):
-                for fname, fdesc in base._fields.items():
-                    # Skip private/internal fields from the base ConfigsLoader
-                    if not fname.startswith("_"):
-                        fields[fname] = fdesc
+            if not hasattr(base, "_fields"):
+                continue
+            for fname, fdesc in base._fields.items():
+                # Skip private/internal fields from the base ConfigsLoader
+                if not fname.startswith("_"):
+                    fields[fname] = fdesc
 
         # Then process current class annotations (overrides parents)
         annotations = namespace.get("__annotations__", {})

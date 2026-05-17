@@ -199,14 +199,13 @@ def generate_help(
 
     if mode == HELP_MODE_NAVIGATION:
         return _generate_navigation(fields, use_colors, program_name)
-    elif mode == HELP_MODE_ALL:
+    if mode == HELP_MODE_ALL:
         return _generate_all(fields, type_hints, use_colors, program_name)
-    elif mode == HELP_MODE_REQUIRED:
+    if mode == HELP_MODE_REQUIRED:
         return _generate_required(fields, type_hints, use_colors, program_name)
-    elif mode == HELP_MODE_GROUPS:
+    if mode == HELP_MODE_GROUPS:
         return _generate_groups(fields, use_colors, program_name)
-    else:
-        return _generate_group(fields, type_hints, mode, use_colors, program_name)
+    return _generate_group(fields, type_hints, mode, use_colors, program_name)
 
 
 def _generate_navigation(

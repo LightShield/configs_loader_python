@@ -68,7 +68,9 @@ def run_validators(
                     f"Validation failed for field '{name}': "
                     f"validator returned False for value {value!r}"
                 )
-        except Exception as e:
+        except (TypeError, ValueError, AttributeError) as e:
+            # Validators return bool; these are the most likely exceptions
+            # from a malformed validator or unexpected value type.
             errors.append(f"Validation failed for field '{name}': {e}")
     return errors
 

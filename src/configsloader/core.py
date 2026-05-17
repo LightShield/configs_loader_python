@@ -27,6 +27,7 @@ class ConfigsLoader(metaclass=_ConfigMeta):
     _is_set: dict[str, bool]
 
     def __init__(self, **values: Any) -> None:
+        """Initialize with resolved field values."""
         self._is_set = {}
         for name, descriptor in self._fields.items():
             setattr(self, name, values.get(name, descriptor.default))

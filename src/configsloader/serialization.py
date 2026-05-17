@@ -23,14 +23,13 @@ def _format_value(value: Any) -> str:
     """
     if isinstance(value, bool):
         return str(value).lower()
-    elif isinstance(value, int):
+    if isinstance(value, int):
         return str(value)
-    elif isinstance(value, float):
+    if isinstance(value, float):
         return str(value)
-    elif isinstance(value, str):
+    if isinstance(value, str):
         return f'"{value}"'
-    else:
-        return f'"{value}"'
+    return f'"{value}"'
 
 
 def _group_by_section(

@@ -8,7 +8,31 @@ from __future__ import annotations
 
 from typing import Any
 
-__all__ = ["flatten_nested_class", "resolve_dotted_section"]
+__all__ = ["find_nested_configs", "flatten_nested_class", "resolve_dotted_section"]
+
+
+def find_nested_configs(cls: type, base_class: type) -> dict[str, type]:
+    """Find all nested ConfigsLoader subclasses in a class.
+
+    Args:
+        cls: Class to inspect for nested subclasses.
+        base_class: The base class to match (e.g., ConfigsLoader).
+
+    Returns:
+        Dict mapping attribute name to nested class.
+    """
+    results: dict[str, type] = {}
+    for attr_name in list(vars(cls)):
+        attr = getattr(cls, attr_name, None)
+        if (
+            isinstance(attr, type)
+            and issubclass(attr, base_class)
+            and attr is not base_class
+            and attr is not cls
+            and not attr_name.startswith("_")
+        ):
+            results[attr_name] = attr
+    return results
 
 
 def flatten_nested_class(cls: type) -> dict[str, Any]:

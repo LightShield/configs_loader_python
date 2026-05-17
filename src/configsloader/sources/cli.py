@@ -89,6 +89,36 @@ def parse_cli(
     return result
 
 
+def _consume_known_flag(
+    args: list[str],
+    i: int,
+    field: dict[str, Any],
+    result: dict[str, Any],
+) -> int:
+    """Consume a known flag and its value, returning the new index.
+
+    Args:
+        args: Full argument list.
+        i: Current index (pointing to the flag token).
+        field: Field-info dict for this flag.
+        result: Accumulator dict for parsed values.
+
+    Returns:
+        Updated index past the consumed token(s).
+    """
+    if not field.get("is_bool", False):
+        if i + 1 < len(args):
+            result[field["name"]] = args[i + 1]
+            return i + 2
+        return i + 1
+
+    result[field["name"]] = _parse_bool_flag(args, i)
+    all_bool_values = BOOL_TRUE_VALUES | BOOL_FALSE_VALUES
+    if i + 1 < len(args) and args[i + 1].lower() in all_bool_values:
+        return i + 2
+    return i + 1
+
+
 def _parse_args_loop(
     args: list[str],
     flag_map: dict[str, dict[str, Any]],
@@ -115,30 +145,19 @@ def _parse_args_loop(
             continue
 
         if token in flag_map:
-            field = flag_map[token]
-            is_bool = field.get("is_bool", False)
-            if is_bool:
-                result[field["name"]] = _parse_bool_flag(args, i)
-                # Advance past explicit bool value if present
-                if i + 1 < len(args) and args[i + 1].lower() in (BOOL_TRUE_VALUES | BOOL_FALSE_VALUES):
-                    i += 2
-                else:
-                    i += 1
-            else:
-                if i + 1 < len(args):
-                    result[field["name"]] = args[i + 1]
-                    i += 2
-                else:
-                    i += 1
-        elif _is_flag(token):
+            i = _consume_known_flag(args, i, flag_map[token], result)
+            continue
+
+        if _is_flag(token):
             unknown.append(token)
             # Skip value of unknown flag if next arg is not a flag
             if i + 1 < len(args) and not _is_flag(args[i + 1]):
                 i += 2
             else:
                 i += 1
-        else:
-            i += 1
+            continue
+
+        i += 1
 
 
 def _parse_bool_flag(args: list[str], idx: int) -> bool:

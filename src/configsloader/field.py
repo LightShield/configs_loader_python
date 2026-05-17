@@ -36,6 +36,7 @@ class FieldDescriptor:
     validator: Callable[[Any], bool] | None = None
 
 
+# Intentional: Field() mirrors dataclasses.field() pattern — grouping these would hurt usability
 def Field(
     default: Any = None,
     flags: list[str] | None = None,

@@ -17,7 +17,7 @@ from configsloader.constants import (
     UNKNOWN_FLAG_ERROR,
 )
 from configsloader.help import print_help_and_exit
-from configsloader.hierarchy import resolve_dotted_section
+from configsloader.hierarchy import find_nested_configs, resolve_dotted_section
 from configsloader.serialization import print_config
 from configsloader.sources.cli import parse_cli
 from configsloader.sources.env import load_env
@@ -72,35 +72,28 @@ def _collect_nested_fields(cls: type, prefix: str = "") -> list[dict[str, Any]]:
     from configsloader.core import ConfigsLoader as _Base
 
     results: list[dict[str, Any]] = []
-    for attr_name in list(vars(cls)):
-        attr = getattr(cls, attr_name, None)
-        if (
-            isinstance(attr, type)
-            and issubclass(attr, _Base)
-            and attr is not _Base
-            and attr is not cls
-            and not attr_name.startswith("_")
-        ):
-            nested_prefix = f"{prefix}{attr_name}" if not prefix else f"{prefix}.{attr_name}"
-            # Get this nested class's own fields
-            nested_hints = get_type_hints(attr)
-            for name, descriptor in attr._fields.items():
-                target_type = nested_hints.get(name, str)
-                results.append({
-                    "info": {
-                        "name": f"{nested_prefix}.{name}",
-                        "flags": descriptor.flags,
-                        "env": getattr(descriptor, "env", None),
-                        "type": target_type,
-                        "is_bool": target_type is bool,
-                    },
-                    "path": nested_prefix,
-                    "field_name": name,
-                    "descriptor": descriptor,
+    nested = find_nested_configs(cls, _Base)
+    for attr_name, attr in nested.items():
+        nested_prefix = f"{prefix}{attr_name}" if not prefix else f"{prefix}.{attr_name}"
+        # Get this nested class's own fields
+        nested_hints = get_type_hints(attr)
+        for name, descriptor in attr._fields.items():
+            target_type = nested_hints.get(name, str)
+            results.append({
+                "info": {
+                    "name": f"{nested_prefix}.{name}",
+                    "flags": descriptor.flags,
+                    "env": getattr(descriptor, "env", None),
                     "type": target_type,
-                })
-            # Recurse into sub-nested classes
-            results.extend(_collect_nested_fields(attr, nested_prefix))
+                    "is_bool": target_type is bool,
+                },
+                "path": nested_prefix,
+                "field_name": name,
+                "descriptor": descriptor,
+                "type": target_type,
+            })
+        # Recurse into sub-nested classes
+        results.extend(_collect_nested_fields(attr, nested_prefix))
     return results
 
 
@@ -165,17 +158,10 @@ def _build_nested_instances(
     from configsloader.core import ConfigsLoader as _Base
 
     nested_instances: dict[str, Any] = {}
-    for attr_name in list(vars(cls)):
-        attr = getattr(cls, attr_name, None)
-        if (
-            isinstance(attr, type)
-            and issubclass(attr, _Base)
-            and attr is not _Base
-            and attr is not cls
-            and not attr_name.startswith("_")
-        ):
-            instance = _load_nested(attr, attr_name, sources, file_data)
-            nested_instances[attr_name] = instance
+    nested = find_nested_configs(cls, _Base)
+    for attr_name, attr in nested.items():
+        instance = _load_nested(attr, attr_name, sources, file_data)
+        nested_instances[attr_name] = instance
     return nested_instances
 
 
@@ -217,19 +203,12 @@ def _load_nested(
         instance._is_set[name] = was_set
 
     # Recursively handle sub-nested classes
-    for attr_name in list(vars(cls)):
-        attr = getattr(cls, attr_name, None)
-        if (
-            isinstance(attr, type)
-            and issubclass(attr, _Base)
-            and attr is not _Base
-            and attr is not cls
-            and not attr_name.startswith("_")
-        ):
-            sub_instance = _load_nested(
-                attr, f"{prefix}.{attr_name}", sources, file_data
-            )
-            setattr(instance, attr_name, sub_instance)
+    nested = find_nested_configs(cls, _Base)
+    for attr_name, attr in nested.items():
+        sub_instance = _load_nested(
+            attr, f"{prefix}.{attr_name}", sources, file_data
+        )
+        setattr(instance, attr_name, sub_instance)
 
     # Collect errors (will raise if any)
     collect_errors(errors)
@@ -273,6 +252,29 @@ def _resolve_nested_field(
     return descriptor.default, False
 
 
+def _handle_special_flags(
+    cls: type,
+    args: list[str],
+    resolved: dict[str, Any],
+    type_hints: dict[str, type],
+) -> None:
+    """Handle --help and --print-config flags, exiting if present.
+
+    Args:
+        cls: ConfigsLoader subclass.
+        args: CLI argument list.
+        resolved: Resolved field values (needed for print-config).
+        type_hints: Type annotations for help display.
+
+    Raises:
+        SystemExit: If any special flag is present.
+    """
+    if _has_print_config_verbose(args):
+        print_config(cls._fields, resolved, verbose=True)
+    if _has_print_config(args):
+        print_config(cls._fields, resolved, verbose=False)
+
+
 def load_config(
     cls: type,
     args: list[str] | None = None,
@@ -280,14 +282,7 @@ def load_config(
     file: str | Path | None = None,
     section: str | None = None,
 ) -> Any:
-    """Load configuration from all sources.
-
-    Resolution order (highest priority first):
-    1. CLI arguments
-    2. Environment variables
-    3. Preset file (if --preset specified)
-    4. Config files
-    5. Default values
+    """Load configuration from all sources (CLI > env > preset > file > default).
 
     Args:
         cls: ConfigsLoader subclass with declared fields.
@@ -322,11 +317,8 @@ def load_config(
         cls, sources, file_data, section, type_hints
     )
 
-    # Handle --print-config
-    if _has_print_config_verbose(args):
-        print_config(cls._fields, resolved, verbose=True)
-    if _has_print_config(args):
-        print_config(cls._fields, resolved, verbose=False)
+    # Handle --print-config flags
+    _handle_special_flags(cls, args, resolved, type_hints)
 
     # Build instance and run validation
     instance = _build_instance(cls, resolved, is_set, sources, file_data)
@@ -342,21 +334,17 @@ def _load_all_sources(
     file: str | Path | None,
     field_infos: list[dict[str, Any]],
 ) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
-    """Load raw values from all sources.
-
-    Args:
-        cls: ConfigsLoader subclass.
-        args: CLI argument list.
-        files: List of config file paths.
-        file: Single config file path.
-        field_infos: Field-info dicts for source modules.
+    """Load raw values from CLI, env, preset, and config files.
 
     Returns:
         Tuple of (sources dict, file_data dict).
     """
     # Determine unknown_flags setting from Meta
     meta = getattr(cls, "Meta", None)
-    unknown_flags = getattr(meta, "unknown_flags", UNKNOWN_FLAG_ERROR) if meta else UNKNOWN_FLAG_ERROR
+    unknown_flags = (
+        getattr(meta, "unknown_flags", UNKNOWN_FLAG_ERROR)
+        if meta else UNKNOWN_FLAG_ERROR
+    )
 
     # Parse CLI (includes nested fields)
     cli_values = parse_cli(args, field_infos, unknown_flags=unknown_flags)
@@ -387,6 +375,51 @@ def _load_all_sources(
     return sources, file_data
 
 
+def _resolve_single_field(
+    name: str,
+    descriptor: Any,
+    sources: dict[str, dict[str, Any]],
+    file_data: dict[str, Any],
+    section: str | None,
+    type_hints: dict[str, type],
+) -> tuple[Any, bool, str | None]:
+    """Resolve a single field from all sources with coercion.
+
+    Args:
+        name: Field name.
+        descriptor: FieldDescriptor instance.
+        sources: Dict of source name -> values dict.
+        file_data: Merged file data dict.
+        section: Global section override.
+        type_hints: Type annotations for the class.
+
+    Returns:
+        Tuple of (coerced value, was_set flag, error string or None).
+    """
+    field_section = getattr(descriptor, "section", None) or section
+    if field_section:
+        field_values = resolve_dotted_section(file_data, field_section)
+    else:
+        field_values = file_data
+
+    file_key = _get_file_key(name, descriptor, field_section)
+
+    field_sources: dict[str, dict[str, Any]] = {
+        "cli": sources["cli"],
+        "env": sources["env"],
+        "preset": sources["preset"],
+        "file": field_values,
+    }
+    raw, was_set = _resolve_value(name, descriptor, field_sources, file_key)
+
+    target_type = type_hints.get(name, str)
+    try:
+        value = coerce(raw, target_type, name)
+        return value, was_set, None
+    except (ValueError, TypeError) as e:
+        return raw, was_set, str(e)
+
+
 def _resolve_all_fields(
     cls: type,
     sources: dict[str, dict[str, Any]],
@@ -411,33 +444,13 @@ def _resolve_all_fields(
     coercion_errors: list[str] = []
 
     for name, descriptor in cls._fields.items():
-        # Determine file value using section
-        field_section = getattr(descriptor, "section", None) or section
-        if field_section:
-            field_values = resolve_dotted_section(file_data, field_section)
-        else:
-            field_values = file_data
-
-        # Determine the key to look up in file_values
-        file_key = _get_file_key(name, descriptor, field_section)
-
-        # Resolve from sources in priority order
-        field_sources: dict[str, dict[str, Any]] = {
-            "cli": sources["cli"],
-            "env": sources["env"],
-            "preset": sources["preset"],
-            "file": field_values,
-        }
-        raw, was_set = _resolve_value(name, descriptor, field_sources, file_key)
+        value, was_set, error = _resolve_single_field(
+            name, descriptor, sources, file_data, section, type_hints
+        )
+        resolved[name] = value
         is_set[name] = was_set
-
-        # Coerce type
-        target_type = type_hints.get(name, str)
-        try:
-            resolved[name] = coerce(raw, target_type, name)
-        except (ValueError, TypeError) as e:
-            coercion_errors.append(str(e))
-            resolved[name] = raw
+        if error:
+            coercion_errors.append(error)
 
     return resolved, is_set, coercion_errors
 
