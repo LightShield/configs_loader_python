@@ -20,6 +20,11 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "unit: unit tests for individual modules",
+    "integration: integration tests across multiple modules",
+    "e2e: end-to-end tests using full .load() flow",
+]
 
 [tool.ruff]
 line-length = 100
