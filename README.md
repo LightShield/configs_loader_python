@@ -1,21 +1,47 @@
 # ConfigsLoader Python
 
-> **⚠️ TEMPORARY IMPLEMENTATION — API ONLY ⚠️**
->
-> This is a **minimal stub** implementing only the public API surface needed by
-> [guild](https://github.com/LightShield/guild). The internals are trivial
-> (tomllib + sys.argv) and will be replaced with a proper implementation later.
->
-> **Do not treat this as production-ready.** It exists to unblock Guild from
-> duplicating config declarations between Pydantic models and Typer CLI flags.
->
-> The real implementation will follow the design philosophy of
-> [configs_loader_cpp](https://github.com/LightShield/configs_loader_cpp):
-> single declaration per field, type-safe, high-performance reads, auto-generated help.
+Configuration is scattered everywhere: argparse flags in one place, env-var
+lookups in another, file-parsing logic in a third, and defaults sprinkled
+throughout. Every new field means touching all of them. ConfigsLoader fixes
+this: **one declaration per field, all sources resolved automatically.**
 
-## What It Does
+## What It Is
 
-One declaration per config field. Value resolved from: **CLI flag > env var > config file > default**.
+A unified, multi-source configuration loader for Python applications.
+You declare each config field once and ConfigsLoader resolves its value from a
+strict priority chain:
+
+**CLI flag > environment variable > preset file > config file > default**
+
+## How It Differs
+
+| Property | ConfigsLoader | Typical approach |
+|----------|--------------|-----------------|
+| Declarations | Single per field | Duplicated across argparse, env, file parser |
+| Priority chain | Built-in (CLI > env > preset > file > default) | Manual layering |
+| Type safety | Automatic coercion with validation | Per-source casting |
+| Runtime dependencies | Zero | Often pulls in Click, pydantic-settings, etc. |
+| Help generation | Auto-generated from field metadata | Manual duplication |
+
+## Features
+
+- Declarative fields with defaults, CLI flags, env vars, and descriptions
+- Resolution order: CLI > env var > preset file > config file > default
+- Type coercion (str, int, float, bool, Enum, List, Optional)
+- Required field validation
+- Custom validators (single-field and cross-field)
+- Auto-generated `--help` output
+- TOML config file support with per-field section declarations
+- Global section fallback for simple configs
+- Preset file support (named configuration profiles)
+- Config file auto-discovery (walk up directories)
+- Multiple config files with layering (global -> project)
+- Enum support with string conversion
+- Unknown flag handling (error/warn/ignore modes)
+- Hierarchical/nested config support
+- 236 tests with 100% branch coverage
+
+## Quick Usage
 
 ```python
 from configsloader import ConfigsLoader, Field
@@ -66,28 +92,6 @@ temperature = 0.5
 max_workers = 4
 ```
 
-## Features (Current)
-
-- [x] Declarative fields with defaults, CLI flags, env vars, descriptions
-- [x] Resolution order: CLI > env var > config file > default
-- [x] Type coercion (str, int, float, bool)
-- [x] Required field validation
-- [x] Auto-generated `--help`
-- [x] TOML config file support
-- [x] Per-field section declarations (each field knows its TOML section)
-- [x] Global section fallback for simple configs
-
-## Missing (Future)
-
-- [ ] Hierarchical/nested configs
-- [ ] Preset files
-- [ ] Custom validators beyond type coercion
-- [ ] Config file auto-discovery (walk up directories)
-- [ ] Multiple config files with layering (global → project)
-- [ ] Enum support with string conversion
-- [ ] Unknown flag handling (error/warn/ignore)
-- [ ] Performance optimization
-
 ## Install
 
 ```bash
@@ -97,4 +101,4 @@ pip install -e .
 ## Requirements
 
 - Python 3.11+
-- No external dependencies
+- No runtime dependencies

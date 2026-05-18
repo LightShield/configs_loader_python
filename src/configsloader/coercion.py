@@ -60,10 +60,7 @@ def _is_unsupported_type(target_type: type) -> bool:
     # Check for generic types (list[str], dict[str, int], etc.)
     if hasattr(target_type, "__origin__"):
         return True
-    # Check that it's a callable type constructor (str, int, float, etc.)
-    if not isinstance(target_type, type):
-        return True
-    return False
+    return not isinstance(target_type, type)
 
 
 def _coerce_bool(value: Any) -> bool:
@@ -106,14 +103,14 @@ def _coerce_enum(value: Any, target_type: type, field_name: str) -> Any:
         ValueError: If no matching enum member is found.
     """
     # Try by value first
-    for member in target_type:
+    for member in target_type:  # type: ignore[attr-defined]
         if member.value == value:
             return member
 
     # Try by name (case-insensitive)
     if isinstance(value, str):
         upper_val = value.upper()
-        for member in target_type:
+        for member in target_type:  # type: ignore[attr-defined]
             if member.name == upper_val:
                 return member
 
@@ -125,7 +122,7 @@ def _coerce_enum(value: Any, target_type: type, field_name: str) -> Any:
         except (ValueError, KeyError):
             pass
 
-    valid = [f"{m.name}={m.value!r}" for m in target_type]
+    valid = [f"{m.name}={m.value!r}" for m in target_type]  # type: ignore[attr-defined]
     raise ValueError(
         f"Cannot convert '{value}' to {target_type.__name__} for field "
         f"'{field_name}'. Valid values: {', '.join(valid)}"
@@ -150,6 +147,5 @@ def _coerce_primitive(value: Any, target_type: type, field_name: str) -> Any:
         return target_type(value)
     except (ValueError, TypeError) as e:
         raise ValueError(
-            f"Cannot convert '{value}' to {target_type.__name__} for field "
-            f"'{field_name}': {e}"
+            f"Cannot convert '{value}' to {target_type.__name__} for field " f"'{field_name}': {e}"
         ) from None

@@ -11,7 +11,6 @@ import pytest
 
 from configsloader.sources.file import load_file, load_files
 
-
 # ---------------------------------------------------------------------------
 # FR-05: Config File Loading (TOML)
 # ---------------------------------------------------------------------------

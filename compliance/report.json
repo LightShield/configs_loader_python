@@ -1,0 +1,559 @@
+{
+  "rules_total": 110,
+  "rules_pass": 96,
+  "rules_na": 14,
+  "rules_fail": 0,
+  "coverage_pct": 100,
+  "results": [
+    {
+      "rule_id": "common_code-quality_descriptive-names",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_code-quality_early-exit",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_code-quality_fail-fast",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_code-quality_intent-not-implementation",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_code-quality_max-five-params",
+      "status": "PASS",
+      "method": "tool_assist"
+    },
+    {
+      "rule_id": "common_code-quality_no-magic-numbers",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_code-quality_no-magic-strings",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_code-quality_no-nested-ternary",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_code-quality_no-what-comments",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_code-quality_one-abstraction-level",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_code-quality_short-functions",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_code-quality_wrap-third-party",
+      "status": "N-A",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_code-review_beyond-guidelines-review",
+      "status": "PASS",
+      "method": "process_gate"
+    },
+    {
+      "rule_id": "common_code-review_explain-review-reasoning",
+      "status": "PASS",
+      "method": "process_gate"
+    },
+    {
+      "rule_id": "common_code-review_guidelines-based-review",
+      "status": "PASS",
+      "method": "process_gate"
+    },
+    {
+      "rule_id": "common_code-review_prompt-responses",
+      "status": "PASS",
+      "method": "process_gate"
+    },
+    {
+      "rule_id": "common_code-review_self-review-first",
+      "status": "PASS",
+      "method": "process_gate"
+    },
+    {
+      "rule_id": "common_code-review_single-concern-pr",
+      "status": "PASS",
+      "method": "process_gate"
+    },
+    {
+      "rule_id": "common_documentation_audience-split-docs",
+      "status": "N-A",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_documentation_colocated-assets",
+      "status": "N-A",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_documentation_docs-match-code",
+      "status": "PASS",
+      "method": "process_gate"
+    },
+    {
+      "rule_id": "common_documentation_document-public-api",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_documentation_readme-summary",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_documentation_requirements-have-acceptance-criteria",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_documentation_single-root-readme",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_documentation_version-in-output",
+      "status": "PASS",
+      "method": "process_gate"
+    },
+    {
+      "rule_id": "common_git-strategy_atomic-commits",
+      "status": "PASS",
+      "method": "process_gate"
+    },
+    {
+      "rule_id": "common_git-strategy_branch-naming",
+      "status": "N/A",
+      "method": "process_gate"
+    },
+    {
+      "rule_id": "common_git-strategy_conventional-commits",
+      "status": "PASS",
+      "method": "process_gate"
+    },
+    {
+      "rule_id": "common_git-strategy_delete-merged-branches",
+      "status": "PASS",
+      "method": "process_gate"
+    },
+    {
+      "rule_id": "common_git-strategy_deployable-main",
+      "status": "PASS",
+      "method": "process_gate"
+    },
+    {
+      "rule_id": "common_git-strategy_feature-branches",
+      "status": "N-A",
+      "method": "process"
+    },
+    {
+      "rule_id": "common_git-strategy_squash-merge",
+      "status": "N/A",
+      "method": "process_gate"
+    },
+    {
+      "rule_id": "common_logging_contextual-log-messages",
+      "status": "N-A",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_logging_correct-log-levels",
+      "status": "N-A",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_logging_info-tells-story",
+      "status": "N-A",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_project-structure_centralized-config",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_project-structure_clean-root",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_project-structure_group-by-domain",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_project-structure_mirrored-test-layout",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_project-structure_no-artifacts-in-git",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_project-structure_shallow-nesting",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_solid_dependency-inversion",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_solid_interface-segregation",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_solid_liskov-substitution",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_solid_open-closed",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_solid_single-responsibility",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_testing_accountable-coverage",
+      "status": "PASS",
+      "method": "tool_check"
+    },
+    {
+      "rule_id": "common_testing_assert-all-outcomes",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_testing_behavior-named-tests",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_testing_independent-tests",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_testing_integration-boundary-tests",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_testing_learning-tests",
+      "status": "N-A",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_testing_no-flaky-tests",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_testing_one-behavior-per-test",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "common_testing_requirements-coverage",
+      "status": "PASS",
+      "method": "process_gate"
+    },
+    {
+      "rule_id": "common_testing_requirements-traceability",
+      "status": "PASS",
+      "method": "process_gate"
+    },
+    {
+      "rule_id": "common_testing_test-driven",
+      "status": "PASS",
+      "method": "process_gate"
+    },
+    {
+      "rule_id": "common_testing_test-type-markers",
+      "status": "PASS",
+      "method": "process_gate"
+    },
+    {
+      "rule_id": "general_review",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_best-practices_composition-over-inheritance",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_best-practices_context-managers",
+      "status": "PASS",
+      "method": "tool_check"
+    },
+    {
+      "rule_id": "python_best-practices_no-mutable-defaults",
+      "status": "PASS",
+      "method": "tool_check"
+    },
+    {
+      "rule_id": "python_best-practices_prefer-comprehensions",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_best-practices_use-dataclasses",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_best-practices_use-enumerate",
+      "status": "PASS",
+      "method": "tool_check"
+    },
+    {
+      "rule_id": "python_best-practices_use-fstrings",
+      "status": "PASS",
+      "method": "tool_check"
+    },
+    {
+      "rule_id": "python_best-practices_use-isinstance",
+      "status": "PASS",
+      "method": "tool_check"
+    },
+    {
+      "rule_id": "python_best-practices_use-pathlib",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_best-practices_use-property",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_dependencies_document-dependencies",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_dependencies_editable-installs",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_dependencies_lock-file-required",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_dependencies_minimal-dependencies",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_dependencies_pyproject-toml-only",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_dependencies_version-ranges",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_documentation_docstring-format",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_documentation_document-args-returns",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_documentation_ruff-docstring-enforcement",
+      "status": "PASS",
+      "method": "tool_check"
+    },
+    {
+      "rule_id": "python_error-handling_no-print",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_error-handling_specific-exceptions",
+      "status": "PASS",
+      "method": "tool_check"
+    },
+    {
+      "rule_id": "python_organization_explicit-all-exports",
+      "status": "PASS",
+      "method": "tool_check"
+    },
+    {
+      "rule_id": "python_organization_import-order",
+      "status": "PASS",
+      "method": "tool_check"
+    },
+    {
+      "rule_id": "python_organization_module-structure",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_organization_one-class-per-file",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_performance_cache-pure-functions",
+      "status": "N-A",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_performance_prefer-builtins",
+      "status": "PASS",
+      "method": "tool_check"
+    },
+    {
+      "rule_id": "python_performance_sets-for-membership",
+      "status": "PASS",
+      "method": "tool_check"
+    },
+    {
+      "rule_id": "python_performance_use-generators",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_performance_use-slots",
+      "status": "N-A",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_stack_max-complexity-10",
+      "status": "PASS",
+      "method": "tool_check"
+    },
+    {
+      "rule_id": "python_stack_use-black",
+      "status": "PASS",
+      "method": "tool_check"
+    },
+    {
+      "rule_id": "python_stack_use-configsloader",
+      "status": "N-A",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_stack_use-logger",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_stack_use-mypy-strict",
+      "status": "PASS",
+      "method": "tool_check"
+    },
+    {
+      "rule_id": "python_stack_use-pytest",
+      "status": "PASS",
+      "method": "tool_check"
+    },
+    {
+      "rule_id": "python_stack_use-ruff",
+      "status": "PASS",
+      "method": "tool_check"
+    },
+    {
+      "rule_id": "python_style_line-length-100",
+      "status": "PASS",
+      "method": "tool_check"
+    },
+    {
+      "rule_id": "python_style_max-five-params",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_style_naming-conventions",
+      "status": "PASS",
+      "method": "tool_check"
+    },
+    {
+      "rule_id": "python_style_no-magic-numbers",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_style_no-nested-ternary",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_style_short-functions",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_style_type-hints-everywhere",
+      "status": "PASS",
+      "method": "tool_check"
+    },
+    {
+      "rule_id": "python_style_underscore-private",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_testing_required-markers",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_testing_test-file-naming",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_testing_use-fixtures",
+      "status": "PASS",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_testing_use-import-linter",
+      "status": "N-A",
+      "method": "inspection"
+    },
+    {
+      "rule_id": "python_testing_use-parametrize",
+      "status": "PASS",
+      "method": "inspection"
+    }
+  ]
+}

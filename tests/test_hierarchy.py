@@ -7,7 +7,6 @@ import pytest
 
 from configsloader import ConfigsLoader, Field
 
-
 # ---------------------------------------------------------------------------
 # Config classes for hierarchy tests
 # ---------------------------------------------------------------------------
@@ -41,11 +40,17 @@ class NestedClassConfig(ConfigsLoader):
 
     class backend(ConfigsLoader):
         class db(ConfigsLoader):
-            host: str = Field(default="localhost", flags=["--backend.db.host"], description="DB host")
+            host: str = Field(
+                default="localhost", flags=["--backend.db.host"], description="DB host"
+            )
             port: int = Field(default=5432, flags=["--backend.db.port"], description="DB port")
 
         class cache(ConfigsLoader):
-            host: str = Field(default="localhost", flags=["--backend.cache.host"], description="Cache host")
+            host: str = Field(
+                default="localhost",
+                flags=["--backend.cache.host"],
+                description="Cache host",
+            )
             ttl: int = Field(default=300, flags=["--backend.cache.ttl"], description="Cache TTL")
 
 
@@ -66,7 +71,14 @@ class TestDottedCLIFlags:
     def test_multiple_dotted_flags_resolve(self):
         """AC-29.3: Multiple dotted flags all resolve correctly."""
         config = DottedFlagConfig.load(
-            args=["--backend.db.host", "dbserver", "--backend.db.port", "3306", "--backend.cache.ttl", "60"]
+            args=[
+                "--backend.db.host",
+                "dbserver",
+                "--backend.db.port",
+                "3306",
+                "--backend.cache.ttl",
+                "60",
+            ]
         )
         assert config.db_host == "dbserver"
         assert config.db_port == 3306
@@ -131,6 +143,7 @@ class TestFlattenNestedClass:
     def test_flatten_nested_class_returns_fields(self):
         """hierarchy.py:50-62 — flatten_nested_class discovers nested ConfigsLoader subclasses."""
         from configsloader.hierarchy import flatten_nested_class
+
         result = flatten_nested_class(NestedClassConfig)
         # Should find backend.db.host, backend.db.port, backend.cache.host, backend.cache.ttl
         assert any("host" in key for key in result)
@@ -138,8 +151,9 @@ class TestFlattenNestedClass:
     def test_flatten_nested_class_includes_section(self):
         """hierarchy.py:77-92 — _collect_nested sets section prefix."""
         from configsloader.hierarchy import flatten_nested_class
+
         result = flatten_nested_class(NestedClassConfig)
-        for key, data in result.items():
+        for _key, data in result.items():
             assert "section" in data
             assert data["section"] != ""
 
@@ -151,6 +165,7 @@ class TestResolveDottedSection:
     def test_resolve_dotted_section_empty_string(self):
         """hierarchy.py:111 — empty section returns the data as-is."""
         from configsloader.hierarchy import resolve_dotted_section
+
         data = {"key": "value"}
         result = resolve_dotted_section(data, "")
         assert result == data
@@ -158,6 +173,7 @@ class TestResolveDottedSection:
     def test_resolve_dotted_section_non_dict_leaf(self):
         """hierarchy.py:120 — non-dict leaf returns empty dict."""
         from configsloader.hierarchy import resolve_dotted_section
+
         data = {"backend": "scalar_value"}
         result = resolve_dotted_section(data, "backend")
         assert result == {}
@@ -165,6 +181,7 @@ class TestResolveDottedSection:
     def test_resolve_dotted_section_missing_part(self):
         """hierarchy.py:111 — missing part in path returns empty dict."""
         from configsloader.hierarchy import resolve_dotted_section
+
         data = {"backend": {"db": {"host": "localhost"}}}
         result = resolve_dotted_section(data, "backend.cache")
         assert result == {}

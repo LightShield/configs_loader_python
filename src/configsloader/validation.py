@@ -9,6 +9,10 @@ from __future__ import annotations
 import inspect
 from typing import Any
 
+# A cross-field validator requires at least 2 parameters: the field value
+# and the config instance providing access to other resolved fields.
+_MIN_CROSS_FIELD_PARAMS = 2
+
 __all__ = ["validate_required", "run_validators", "collect_errors"]
 
 
@@ -86,11 +90,8 @@ def _is_cross_field_validator(validator: Any) -> bool:
     """
     try:
         sig = inspect.signature(validator)
-        params = [
-            p for p in sig.parameters.values()
-            if p.default is inspect.Parameter.empty
-        ]
-        return len(params) >= 2
+        params = [p for p in sig.parameters.values() if p.default is inspect.Parameter.empty]
+        return len(params) >= _MIN_CROSS_FIELD_PARAMS
     except (ValueError, TypeError):
         return False
 
@@ -108,6 +109,4 @@ def collect_errors(errors: list[str]) -> None:
         return
     count = len(errors)
     formatted = "\n".join(f"  * {e}" for e in errors)
-    raise ValueError(
-        f"Configuration validation failed with {count} error(s):\n{formatted}"
-    )
+    raise ValueError(f"Configuration validation failed with {count} error(s):\n{formatted}")

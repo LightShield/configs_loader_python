@@ -4,13 +4,9 @@ Covers: resolution order (CLI > env > preset > file > default), is_set tracking,
 zero-config usage, full priority chain.
 """
 
-import os
-from pathlib import Path
-
 import pytest
 
 from configsloader import ConfigsLoader, Field
-
 
 # ---------------------------------------------------------------------------
 # Config classes for loader tests
@@ -264,6 +260,7 @@ class TestLoaderDefaultArgs:
     def test_load_uses_sys_argv_when_args_is_none(self, monkeypatch):
         """loader.py:300 — args=None defaults to sys.argv[1:]."""
         import sys
+
         monkeypatch.setattr(sys, "argv", ["prog", "--host", "from-argv"])
         config = IsSetConfig.load(args=None)
         assert config.host == "from-argv"
@@ -312,9 +309,8 @@ class TestLoaderResolveValueFileFallback:
 
     def test_file_value_found_by_name_when_file_key_misses(self, tmp_path):
         """loader.py:557 — when file_key doesn't match but name does in file data."""
-        from configsloader import ConfigsLoader, Field
-        from configsloader.loader import _resolve_value
         from configsloader.field import FieldDescriptor
+        from configsloader.loader import _resolve_value
 
         # Simulate: file_key is "something" but name is "host" and file has "host"
         descriptor = FieldDescriptor(default="default_val")

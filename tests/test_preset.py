@@ -11,7 +11,6 @@ import pytest
 
 from configsloader.sources.preset import load_preset
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -59,9 +58,10 @@ class TestPresetLoading:
         fields = [_make_field("host", ["--host"])]
         with pytest.raises(Exception) as exc_info:
             load_preset(missing_path, fields)
-        assert "nonexistent" in str(exc_info.value).lower() or "not found" in str(
-            exc_info.value
-        ).lower()
+        assert (
+            "nonexistent" in str(exc_info.value).lower()
+            or "not found" in str(exc_info.value).lower()
+        )
 
     def test_preset_auto_detects_json_format(self, tmp_path):
         """AC-30.4: Preset file format auto-detected from extension (.json)."""
@@ -116,6 +116,7 @@ class TestPresetResolution:
     def test_preset_resolved_from_directory_bare_name(self, tmp_path):
         """preset.py:55-56 — preset resolved as bare file in directory (no extension)."""
         from configsloader.sources.preset import _resolve_preset_path
+
         preset_dir = tmp_path / "presets"
         preset_dir.mkdir()
         # Create a file named "custom.toml" to NOT match, and a bare file "custom"
@@ -129,8 +130,9 @@ class TestPresetResolution:
 
     def test_preset_path_traversal_raises(self, tmp_path):
         """preset.py:77 — path traversal attempt raises ValueError."""
+
         from configsloader.sources.preset import _check_path_traversal
-        from pathlib import Path
+
         preset_dir = tmp_path / "presets"
         preset_dir.mkdir()
         outside = tmp_path / "outside.toml"

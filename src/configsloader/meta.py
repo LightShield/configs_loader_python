@@ -12,7 +12,6 @@ from typing import Any
 from configsloader.constants import RESERVED_FLAGS
 from configsloader.field import FieldDescriptor
 
-
 __all__ = ["_ConfigMeta"]
 
 

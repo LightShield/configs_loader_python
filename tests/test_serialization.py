@@ -7,7 +7,6 @@ import pytest
 
 from configsloader import ConfigsLoader, Field
 
-
 # ---------------------------------------------------------------------------
 # Config class for serialization tests
 # ---------------------------------------------------------------------------
@@ -129,16 +128,19 @@ class TestFormatValueEdgeCases:
     def test_format_value_int(self):
         """serialization.py:28 — int formatted as string."""
         from configsloader.serialization import _format_value
+
         assert _format_value(42) == "42"
 
     def test_format_value_float(self):
         """serialization.py:31 — float formatted as string."""
         from configsloader.serialization import _format_value
+
         assert _format_value(3.14) == "3.14"
 
     def test_format_value_non_standard_type(self):
         """serialization.py:31 — non-standard types formatted with quotes."""
         from configsloader.serialization import _format_value
+
         result = _format_value([1, 2, 3])
         assert result.startswith('"')
 

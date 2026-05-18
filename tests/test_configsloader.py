@@ -1,6 +1,5 @@
 """Tests for configsloader — verifies API contract."""
 
-import os
 from enum import Enum
 from pathlib import Path
 
@@ -157,7 +156,7 @@ class TestPerFieldSections:
 
     def test_missing_section_uses_default(self, tmp_path: Path) -> None:
         config_file = tmp_path / "config.toml"
-        config_file.write_text('[guild]\nmax_agents = 2\n')
+        config_file.write_text("[guild]\nmax_agents = 2\n")
         config = MultiSectionConfig.load(args=[], file=str(config_file))
         assert config.model == "default-model"  # provider section missing, uses default
         assert config.max_agents == 2
@@ -210,23 +209,25 @@ class TestEnumSupport:
 class TestResolutionOrder:
     """CLI > env > file > default."""
 
-    def test_cli_overrides_env_overrides_file(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_cli_overrides_env_overrides_file(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         config_file = tmp_path / "config.toml"
-        config_file.write_text('timeout = 100\n')
+        config_file.write_text("timeout = 100\n")
         monkeypatch.setenv("MY_TIMEOUT", "200")
         config = EnvConfig.load(args=["--timeout", "300"], file=str(config_file))
         assert config.timeout == 300  # CLI wins
 
     def test_env_beats_file(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         config_file = tmp_path / "config.toml"
-        config_file.write_text('timeout = 100\n')
+        config_file.write_text("timeout = 100\n")
         monkeypatch.setenv("MY_TIMEOUT", "200")
         config = EnvConfig.load(args=[], file=str(config_file))
         assert config.timeout == 200  # env wins over file
 
     def test_file_beats_default(self, tmp_path: Path) -> None:
         config_file = tmp_path / "config.toml"
-        config_file.write_text('timeout = 100\n')
+        config_file.write_text("timeout = 100\n")
         config = EnvConfig.load(args=[], file=str(config_file))
         assert config.timeout == 100  # file wins over default (30)
 

@@ -6,9 +6,10 @@ for declaring configuration fields with metadata for multi-source resolution.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field as dc_field
-from typing import Any, Callable
-
+from collections.abc import Callable
+from dataclasses import dataclass
+from dataclasses import field as dc_field
+from typing import Any
 
 __all__ = ["FieldDescriptor", "Field"]
 
@@ -37,7 +38,7 @@ class FieldDescriptor:
 
 
 # Intentional: Field() mirrors dataclasses.field() pattern — grouping these would hurt usability
-def Field(
+def Field(  # noqa: N802
     default: Any = None,
     flags: list[str] | None = None,
     env: str | None = None,

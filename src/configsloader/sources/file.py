@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import tomllib
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from configsloader.constants import FORMAT_AUTO, FORMAT_JSON, FORMAT_TOML
 
@@ -72,8 +72,8 @@ def _load_json(path: str) -> dict[str, Any]:
         ValueError: If the file cannot be parsed as valid JSON.
     """
     try:
-        with open(path, "r") as f:
-            return json.load(f)
+        with open(path) as f:
+            return cast(dict[str, Any], json.load(f))
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON in '{path}': {e}") from e
 
@@ -148,9 +148,7 @@ def load_files(
         path = str(Path(path).expanduser())
         if not Path(path).is_file():
             if strict:
-                raise FileNotFoundError(
-                    f"Config file not found: '{path}'"
-                )
+                raise FileNotFoundError(f"Config file not found: '{path}'")
             continue
         data = load_file(path)
         result = _deep_merge(result, data)

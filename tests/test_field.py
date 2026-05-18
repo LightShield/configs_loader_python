@@ -14,29 +14,55 @@ class TestFieldDescriptorAllAttributes:
     """AC-01.1: Field() returns a descriptor with all attributes retrievable."""
 
     def test_field_stores_default_value(self):
-        fd = Field(default="gemma4", flags=["--model", "-m"], env="APP_MODEL",
-                   section="provider", description="LLM model to use",
-                   required=False, validator=lambda v: bool(v))
+        fd = Field(
+            default="gemma4",
+            flags=["--model", "-m"],
+            env="APP_MODEL",
+            section="provider",
+            description="LLM model to use",
+            required=False,
+            validator=lambda v: bool(v),
+        )
         assert fd.default == "gemma4"
 
     def test_field_stores_flags_list(self):
-        fd = Field(default="gemma4", flags=["--model", "-m"], env="APP_MODEL",
-                   section="provider", description="LLM model to use")
+        fd = Field(
+            default="gemma4",
+            flags=["--model", "-m"],
+            env="APP_MODEL",
+            section="provider",
+            description="LLM model to use",
+        )
         assert fd.flags == ["--model", "-m"]
 
     def test_field_stores_env_attribute(self):
-        fd = Field(default="gemma4", flags=["--model", "-m"], env="APP_MODEL",
-                   section="provider", description="LLM model to use")
+        fd = Field(
+            default="gemma4",
+            flags=["--model", "-m"],
+            env="APP_MODEL",
+            section="provider",
+            description="LLM model to use",
+        )
         assert fd.env == "APP_MODEL"
 
     def test_field_stores_section_attribute(self):
-        fd = Field(default="gemma4", flags=["--model", "-m"], env="APP_MODEL",
-                   section="provider", description="LLM model to use")
+        fd = Field(
+            default="gemma4",
+            flags=["--model", "-m"],
+            env="APP_MODEL",
+            section="provider",
+            description="LLM model to use",
+        )
         assert fd.section == "provider"
 
     def test_field_stores_description(self):
-        fd = Field(default="gemma4", flags=["--model", "-m"], env="APP_MODEL",
-                   section="provider", description="LLM model to use")
+        fd = Field(
+            default="gemma4",
+            flags=["--model", "-m"],
+            env="APP_MODEL",
+            section="provider",
+            description="LLM model to use",
+        )
         assert fd.description == "LLM model to use"
 
     def test_field_stores_required_flag(self):
@@ -44,7 +70,9 @@ class TestFieldDescriptorAllAttributes:
         assert fd.required is True
 
     def test_field_stores_validator_callable(self):
-        v = lambda val: val > 0
+        def v(val):
+            return val > 0
+
         fd = Field(default=1, flags=["--count"], validator=v)
         assert fd.validator is v
 

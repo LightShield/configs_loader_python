@@ -9,7 +9,6 @@ import pytest
 
 from configsloader.sources.cli import parse_cli
 
-
 # ---------------------------------------------------------------------------
 # Helpers — minimal field descriptors for driving parse_cli
 # ---------------------------------------------------------------------------
@@ -155,7 +154,9 @@ class TestUnknownFlagsIgnoreMode:
     def test_unknown_flag_silently_discarded(self, capsys):
         """AC-35.1: Unknown flag in Ignore mode is silently discarded."""
         fields = [_make_field("host", ["--host"])]
-        result = parse_cli(["--host", "localhost", "--unknown-flag"], fields, unknown_flags="ignore")
+        result = parse_cli(
+            ["--host", "localhost", "--unknown-flag"], fields, unknown_flags="ignore"
+        )
         assert result["host"] == "localhost"
         captured = capsys.readouterr()
         assert captured.out == ""

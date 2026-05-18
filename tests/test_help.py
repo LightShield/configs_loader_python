@@ -3,13 +3,9 @@
 Covers: --help modes, colored output, per-field format, section grouping.
 """
 
-import os
-import sys
-
 import pytest
 
 from configsloader import ConfigsLoader, Field
-
 
 # ---------------------------------------------------------------------------
 # Config classes used across help tests
@@ -253,6 +249,7 @@ class TestHelpFormatTypeName:
 
         class FakeType:
             """Object without __name__ attribute."""
+
             def __str__(self):
                 return "custom_type"
 
@@ -266,6 +263,7 @@ class TestHelpFormatTypeName:
     def test_format_default_none_returns_empty(self):
         """help.py:67 — None default returns empty string."""
         from configsloader.help import _format_default
+
         result = _format_default(None, str)
         assert result == ""
 
@@ -277,10 +275,16 @@ class TestHelpAutoColors:
     def test_colors_auto_detect_non_tty(self, monkeypatch):
         """help.py:191->194 — use_colors=None triggers auto-detect."""
         from configsloader.help import generate_help
+
         monkeypatch.delenv("NO_COLOR", raising=False)
         monkeypatch.delenv("FORCE_COLOR", raising=False)
         # generate_help with use_colors=None triggers _should_use_colors()
-        result = generate_help(HelpConfig._fields, {"host": str, "port": int, "model": str, "verbose": bool}, mode="navigation", use_colors=None)
+        result = generate_help(
+            HelpConfig._fields,
+            {"host": str, "port": int, "model": str, "verbose": bool},
+            mode="navigation",
+            use_colors=None,
+        )
         assert "Usage:" in result
 
 
@@ -290,8 +294,8 @@ class TestHelpFieldWithNoneDefault:
 
     def test_field_with_none_default_omits_default_str(self, monkeypatch):
         """help.py:127->130 — field with default=None skips default_str formatting."""
-        from configsloader.help import generate_help
         from configsloader import ConfigsLoader, Field
+        from configsloader.help import generate_help
 
         class NoneDefaultConfig(ConfigsLoader):
             token: str = Field(required=True, flags=["--token"], description="Auth token")
@@ -314,6 +318,7 @@ class TestHelpGroupNoMatch:
     def test_help_group_with_no_matching_fields(self, monkeypatch):
         """help.py:308->314 — group name with no matching fields produces no field lines."""
         from configsloader.help import generate_help
+
         monkeypatch.setenv("NO_COLOR", "1")
         result = generate_help(
             HelpConfig._fields,

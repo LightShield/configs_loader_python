@@ -4,9 +4,9 @@
     Internals will be rewritten. Do not depend on internal behavior.
 """
 
-from configsloader.field import Field, FieldDescriptor
 from configsloader.coercion import coerce
 from configsloader.core import ConfigsLoader
+from configsloader.field import Field, FieldDescriptor
 
 __version__ = "0.1.0"
 

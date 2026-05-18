@@ -34,8 +34,7 @@ def _validate_reserved(fields: list[dict[str, Any]]) -> None:
         for flag in field.get("flags", []):
             if flag in RESERVED_FLAGS:
                 raise ValueError(
-                    f"Flag '{flag}' is reserved and cannot be used by field "
-                    f"'{field['name']}'"
+                    f"Flag '{flag}' is reserved and cannot be used by field " f"'{field['name']}'"
                 )
 
 

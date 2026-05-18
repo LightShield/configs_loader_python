@@ -4,13 +4,9 @@ Covers: required fields, custom validators, validation error collection,
 validation timing, cross-field validators, type coercion failure handling.
 """
 
-import os
-from pathlib import Path
-
 import pytest
 
 from configsloader import ConfigsLoader, Field
-
 
 # ---------------------------------------------------------------------------
 # Config classes used across validation tests
@@ -195,8 +191,8 @@ class TestValidatorSkipsNoneValues:
 
     def test_validator_not_called_on_none_value(self):
         """validation.py:60 — validator skipped when field value is None."""
-        from configsloader.validation import run_validators
         from configsloader.field import FieldDescriptor
+        from configsloader.validation import run_validators
 
         fields = {"port": FieldDescriptor(validator=lambda v: v > 0)}
         errors = run_validators(fields, {"port": None}, None)
@@ -209,8 +205,8 @@ class TestValidatorExceptionHandling:
 
     def test_validator_raising_typeerror_caught(self):
         """validation.py:71-74 — TypeError from validator is caught and reported."""
-        from configsloader.validation import run_validators
         from configsloader.field import FieldDescriptor
+        from configsloader.validation import run_validators
 
         def bad_validator(v):
             raise TypeError("wrong type")
@@ -222,8 +218,8 @@ class TestValidatorExceptionHandling:
 
     def test_validator_raising_attributeerror_caught(self):
         """validation.py:71-74 — AttributeError from validator is caught."""
-        from configsloader.validation import run_validators
         from configsloader.field import FieldDescriptor
+        from configsloader.validation import run_validators
 
         def attr_validator(v):
             raise AttributeError("no attr")
@@ -245,6 +241,7 @@ class TestCrossFieldValidatorDetection:
         class Uninspectable:
             def __call__(self):
                 pass
+
             @property
             def __signature__(self):
                 raise ValueError("no signature")

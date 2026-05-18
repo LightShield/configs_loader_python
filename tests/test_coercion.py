@@ -5,12 +5,10 @@ primitive types, bool semantics, and enum types. Tests are black-box
 and import only from the configsloader public API.
 """
 
-import enum
 import pytest
+from conftest import Color, Mode, Priority
 
 from configsloader.coercion import coerce
-
-from conftest import Color, Priority, Mode
 
 
 @pytest.mark.unit
@@ -51,46 +49,22 @@ class TestStringToFloatCoercion:
 class TestStringToBoolCoercion:
     """FR-13: str to bool coercion with extended semantics (AC-13.1 - AC-13.4)."""
 
-    def test_coerces_true_string_to_true(self):
-        result = coerce("true", bool, "verbose")
-        assert result is True
+    @pytest.mark.parametrize(
+        "input_val",
+        ["true", "1", "yes", "TRUE", "Yes"],
+        ids=["true", "one", "yes", "uppercase", "mixed_case"],
+    )
+    def test_coerces_truthy_string_to_true(self, input_val):
+        assert coerce(input_val, bool, "verbose") is True
 
-    def test_coerces_one_string_to_true(self):
-        result = coerce("1", bool, "verbose")
-        assert result is True
-
-    def test_coerces_yes_string_to_true(self):
-        result = coerce("yes", bool, "verbose")
-        assert result is True
-
-    def test_coerces_TRUE_uppercase_to_true(self):
-        result = coerce("TRUE", bool, "verbose")
-        assert result is True
-
-    def test_coerces_Yes_mixed_case_to_true(self):
-        result = coerce("Yes", bool, "verbose")
-        assert result is True
-
-    def test_coerces_false_string_to_false(self):
-        result = coerce("false", bool, "verbose")
-        assert result is False
-
-    def test_coerces_zero_string_to_false(self):
-        result = coerce("0", bool, "verbose")
-        assert result is False
-
-    def test_coerces_no_string_to_false(self):
-        result = coerce("no", bool, "verbose")
-        assert result is False
-
-    def test_coerces_arbitrary_string_to_false(self):
+    @pytest.mark.parametrize(
+        "input_val",
+        ["false", "0", "no", "nope", ""],
+        ids=["false", "zero", "no", "arbitrary", "empty"],
+    )
+    def test_coerces_falsy_string_to_false(self, input_val):
         """AC-13.4: non-truthy strings resolve to False."""
-        result = coerce("nope", bool, "verbose")
-        assert result is False
-
-    def test_coerces_empty_string_to_false(self):
-        result = coerce("", bool, "verbose")
-        assert result is False
+        assert coerce(input_val, bool, "verbose") is False
 
 
 @pytest.mark.unit
@@ -174,27 +148,20 @@ class TestCoercionFailure:
 class TestValuePassthrough:
     """Value already correct type passes through unchanged."""
 
-    def test_int_passes_through_as_int(self):
-        result = coerce(42, int, "port")
-        assert result == 42
-        assert isinstance(result, int)
-
-    def test_float_passes_through_as_float(self):
-        result = coerce(3.14, float, "rate")
-        assert result == 3.14
-        assert isinstance(result, float)
-
-    def test_bool_passes_through_as_bool(self):
-        result = coerce(True, bool, "verbose")
-        assert result is True
-
-    def test_str_passes_through_as_str(self):
-        result = coerce("hello", str, "name")
-        assert result == "hello"
-
-    def test_enum_passes_through_as_enum(self):
-        result = coerce(Color.RED, Color, "color")
-        assert result is Color.RED
+    @pytest.mark.parametrize(
+        "value,target_type,field",
+        [
+            (42, int, "port"),
+            (3.14, float, "rate"),
+            (True, bool, "verbose"),
+            ("hello", str, "name"),
+            (Color.RED, Color, "color"),
+        ],
+        ids=["int", "float", "bool", "str", "enum"],
+    )
+    def test_value_passes_through_when_already_correct_type(self, value, target_type, field):
+        result = coerce(value, target_type, field)
+        assert result == value
 
     def test_none_passes_through_as_none(self):
         result = coerce(None, int, "port")
@@ -243,6 +210,7 @@ class TestEnumIsEnumTypeEdgeCase:
     def test_is_enum_type_with_non_type_returns_false(self):
         """coercion.py:87-88 — TypeError in issubclass caught."""
         from configsloader.coercion import _is_enum_type
+
         assert _is_enum_type("not_a_type") is False
 
     def test_is_enum_type_with_uninspectable_type(self):
@@ -252,6 +220,7 @@ class TestEnumIsEnumTypeEdgeCase:
         class BadMeta(type):
             def __instancecheck__(cls, instance):
                 return True
+
             def __subclasscheck__(cls, subclass):
                 raise TypeError("cannot check subclass")
 

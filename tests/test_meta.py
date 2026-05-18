@@ -43,6 +43,7 @@ class TestMetaclassFieldCollection:
 
     def test_field_without_descriptor_gets_default_field(self):
         """Fields with type annotations but no Field() get a default FieldDescriptor."""
+
         class MyConfig(ConfigsLoader):
             name: str = "default_name"
 
@@ -60,6 +61,7 @@ class TestMetaclassTypeAnnotations:
 
         # The metaclass should store type information accessible for coercion
         import typing
+
         hints = typing.get_type_hints(MyConfig)
         assert hints["host"] is str
 
@@ -68,6 +70,7 @@ class TestMetaclassTypeAnnotations:
             port: int = Field(default=8080)
 
         import typing
+
         hints = typing.get_type_hints(MyConfig)
         assert hints["port"] is int
 
@@ -76,6 +79,7 @@ class TestMetaclassTypeAnnotations:
             debug: bool = Field(default=False)
 
         import typing
+
         hints = typing.get_type_hints(MyConfig)
         assert hints["debug"] is bool
 
@@ -86,26 +90,31 @@ class TestReservedFlagDetection:
 
     def test_raises_on_help_flag(self):
         with pytest.raises((ValueError, TypeError)):
+
             class BadConfig(ConfigsLoader):
                 my_field: str = Field(flags=["--help"])
 
     def test_raises_on_short_help_flag(self):
         with pytest.raises((ValueError, TypeError)):
+
             class BadConfig(ConfigsLoader):
                 my_field: str = Field(flags=["-h"])
 
     def test_raises_on_preset_flag(self):
         with pytest.raises((ValueError, TypeError)):
+
             class BadConfig(ConfigsLoader):
                 my_field: str = Field(flags=["--preset"])
 
     def test_raises_on_print_config_flag(self):
         with pytest.raises((ValueError, TypeError)):
+
             class BadConfig(ConfigsLoader):
                 my_field: str = Field(flags=["--print-config"])
 
     def test_raises_on_print_config_verbose_flag(self):
         with pytest.raises((ValueError, TypeError)):
+
             class BadConfig(ConfigsLoader):
                 my_field: str = Field(flags=["--print-config-verbose"])
 
@@ -123,12 +132,14 @@ class TestDuplicateFlagDetection:
 
     def test_raises_on_duplicate_long_flag(self):
         with pytest.raises((ValueError, TypeError)):
+
             class BadConfig(ConfigsLoader):
                 host: str = Field(flags=["--host"])
                 server: str = Field(flags=["--host"])
 
     def test_raises_on_duplicate_short_flag(self):
         with pytest.raises((ValueError, TypeError)):
+
             class BadConfig(ConfigsLoader):
                 host: str = Field(flags=["--host", "-H"])
                 server: str = Field(flags=["--server", "-H"])
@@ -136,6 +147,7 @@ class TestDuplicateFlagDetection:
     def test_error_identifies_conflicting_fields(self):
         """The error message should identify which fields conflict."""
         with pytest.raises((ValueError, TypeError), match=r"(host|server)"):
+
             class BadConfig(ConfigsLoader):
                 host: str = Field(flags=["--addr"])
                 server: str = Field(flags=["--addr"])
@@ -156,6 +168,7 @@ class TestMetaclassInheritance:
 
     def test_base_without_fields_attr_skipped(self):
         """meta.py:52 — bases without _fields attribute are skipped."""
+
         class PlainBase:
             pass
 
@@ -167,6 +180,7 @@ class TestMetaclassInheritance:
 
     def test_annotated_field_without_descriptor_gets_default_descriptor(self):
         """meta.py:65 — annotation with non-FieldDescriptor value gets wrapped."""
+
         class MyConfig(ConfigsLoader):
             count: int = 42
 
@@ -175,6 +189,7 @@ class TestMetaclassInheritance:
 
     def test_child_inherits_fields_from_parent(self):
         """meta.py:56 — child class inherits _fields from parent ConfigsLoader."""
+
         class ParentConfig(ConfigsLoader):
             host: str = Field(default="localhost", flags=["--host"])
 

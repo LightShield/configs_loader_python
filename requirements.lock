@@ -1,0 +1,12 @@
+# This file is auto-generated. Do not edit manually.
+# configsloader has zero runtime dependencies.
+#
+# Dev dependencies (from pyproject.toml [project.optional-dependencies.dev]):
+#   pytest>=7.0
+#   pytest-cov>=4.0
+#   ruff>=0.4
+#
+# To regenerate with pinned dev deps:
+#   pip-compile pyproject.toml --extra=dev --output-file=requirements.lock
+#
+# Runtime dependencies: (none)

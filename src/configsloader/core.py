@@ -7,11 +7,10 @@ collection and delegates .load() to the loader orchestrator module.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from configsloader.field import Field, FieldDescriptor
 from configsloader.meta import _ConfigMeta
-
 
 __all__ = ["ConfigsLoader", "Field"]
 
@@ -50,7 +49,7 @@ class ConfigsLoader(metaclass=_ConfigMeta):
         files: list[str] | None = None,
         file: str | Path | None = None,
         section: str | None = None,
-    ) -> "ConfigsLoader":
+    ) -> ConfigsLoader:
         """Load config from all sources.
 
         Resolution order (highest priority first):
@@ -75,4 +74,8 @@ class ConfigsLoader(metaclass=_ConfigMeta):
             ValueError: If validation fails.
         """
         from configsloader.loader import load_config
-        return load_config(cls, args=args, files=files, file=file, section=section)
+
+        return cast(
+            "ConfigsLoader",
+            load_config(cls, args=args, files=files, file=file, section=section),
+        )

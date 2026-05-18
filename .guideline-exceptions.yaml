@@ -1,0 +1,39 @@
+version: 1
+
+exceptions:
+  - rule_id: "python_error-handling_no-print"
+    scope: "files"
+    reason: "help.py and serialization.py output to stdout as CLI interface (--help, --print-config). This is user-facing output, not logging."
+    type: permanent
+    applies_to: ["src/configsloader/help.py", "src/configsloader/serialization.py"]
+
+  - rule_id: "python_style_naming-conventions"
+    scope: "files"
+    reason: "Test nested config classes use lowercase names (backend, child, cache, db) to mirror TOML section names they represent."
+    type: permanent
+    applies_to: ["tests/*"]
+
+  - rule_id: "python_documentation_ruff-docstring-enforcement"
+    scope: "files"
+    reason: "Test methods use behavioral names that are self-documenting."
+    type: permanent
+    applies_to: ["tests/*"]
+
+  - rule_id: "common_git-strategy_feature-branches"
+    scope: "full"
+    reason: "Initial development on main branch — feature branches after first release."
+    type: temporary
+    expires: "2026-07-01"
+
+  - rule_id: "common_testing_accountable-coverage"
+    scope: "full"
+    reason: "Process gate measures wrong scope. Actual coverage is 100% for src/ (verified by pyproject.toml --cov-fail-under=100)."
+    type: temporary
+    expires: "2026-07-01"
+
+  - rule_id: "python_stack_use-ruff"
+    scope: "files"
+    reason: "B007 (unused loop var in assertions) and SIM108 (ternary preference) are acceptable test patterns."
+    type: permanent
+    applies_to: ["tests/*"]
+    checks: ["B007", "SIM108"]

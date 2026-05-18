@@ -47,15 +47,17 @@ def _extract_field_metadata(cls: type) -> list[dict[str, Any]]:
     """
     type_hints = get_type_hints(cls)
     infos: list[dict[str, Any]] = []
-    for name, descriptor in cls._fields.items():
+    for name, descriptor in cls._fields.items():  # type: ignore[attr-defined]
         target_type = type_hints.get(name, str)
-        infos.append({
-            "name": name,
-            "flags": descriptor.flags,
-            "env": getattr(descriptor, "env", None),
-            "type": target_type,
-            "is_bool": target_type is bool,
-        })
+        infos.append(
+            {
+                "name": name,
+                "flags": descriptor.flags,
+                "env": getattr(descriptor, "env", None),
+                "type": target_type,
+                "is_bool": target_type is bool,
+            }
+        )
 
     nested_fields = _collect_nested_fields(cls)
     for nf in nested_fields:
@@ -81,21 +83,23 @@ def _collect_nested_fields(cls: type, prefix: str = "") -> list[dict[str, Any]]:
     for attr_name, attr in nested.items():
         nested_prefix = f"{prefix}{attr_name}" if not prefix else f"{prefix}.{attr_name}"
         nested_hints = get_type_hints(attr)
-        for name, descriptor in attr._fields.items():
+        for name, descriptor in attr._fields.items():  # type: ignore[attr-defined]
             target_type = nested_hints.get(name, str)
-            results.append({
-                "info": {
-                    "name": f"{nested_prefix}.{name}",
-                    "flags": descriptor.flags,
-                    "env": getattr(descriptor, "env", None),
+            results.append(
+                {
+                    "info": {
+                        "name": f"{nested_prefix}.{name}",
+                        "flags": descriptor.flags,
+                        "env": getattr(descriptor, "env", None),
+                        "type": target_type,
+                        "is_bool": target_type is bool,
+                    },
+                    "path": nested_prefix,
+                    "field_name": name,
+                    "descriptor": descriptor,
                     "type": target_type,
-                    "is_bool": target_type is bool,
-                },
-                "path": nested_prefix,
-                "field_name": name,
-                "descriptor": descriptor,
-                "type": target_type,
-            })
+                }
+            )
         results.extend(_collect_nested_fields(attr, nested_prefix))
     return results
 
@@ -187,14 +191,12 @@ def _load_nested(
     from configsloader.core import ConfigsLoader as _Base
 
     type_hints = get_type_hints(cls)
-    instance = cls.__new__(cls)
+    instance = cls.__new__(cls)  # type: ignore[call-overload]
     instance._is_set = {}
     errors: list[str] = []
 
-    for name, descriptor in cls._fields.items():
-        value, was_set = _resolve_nested_field(
-            name, descriptor, prefix, sources, file_data
-        )
+    for name, descriptor in cls._fields.items():  # type: ignore[attr-defined]
+        value, was_set = _resolve_nested_field(name, descriptor, prefix, sources, file_data)
         target_type = type_hints.get(name, str)
         try:
             value = coerce(value, target_type, name)
@@ -205,9 +207,7 @@ def _load_nested(
 
     nested = find_nested_configs(cls, _Base)
     for attr_name, attr in nested.items():
-        sub_instance = _load_nested(
-            attr, f"{prefix}.{attr_name}", sources, file_data
-        )
+        sub_instance = _load_nested(attr, f"{prefix}.{attr_name}", sources, file_data)
         setattr(instance, attr_name, sub_instance)
 
     collect_errors(errors)
@@ -268,9 +268,9 @@ def _process_help_and_print_config(
         SystemExit: If any special flag is present.
     """
     if _has_print_config_verbose(args):
-        print_config(cls._fields, resolved, verbose=True)
+        print_config(cls._fields, resolved, verbose=True)  # type: ignore[attr-defined]
     if _has_print_config(args):
-        print_config(cls._fields, resolved, verbose=False)
+        print_config(cls._fields, resolved, verbose=False)  # type: ignore[attr-defined]
 
 
 def load_config(
@@ -304,7 +304,7 @@ def load_config(
 
     help_mode = _extract_help_mode(args)
     if help_mode is not None:
-        print_help_and_exit(cls._fields, type_hints, mode=help_mode)
+        print_help_and_exit(cls._fields, type_hints, mode=help_mode)  # type: ignore[attr-defined]
 
     sources, file_data = _load_all_sources(cls, args, files, file, field_infos)
 
@@ -334,8 +334,7 @@ def _load_all_sources(
     """
     meta = getattr(cls, "Meta", None)
     unknown_flags = (
-        getattr(meta, "unknown_flags", UNKNOWN_FLAG_ERROR)
-        if meta else UNKNOWN_FLAG_ERROR
+        getattr(meta, "unknown_flags", UNKNOWN_FLAG_ERROR) if meta else UNKNOWN_FLAG_ERROR
     )
 
     cli_values = parse_cli(args, field_infos, unknown_flags=unknown_flags)
@@ -385,10 +384,7 @@ def _resolve_single_field(
         Tuple of (coerced value, was_set flag, error string or None).
     """
     field_section = getattr(descriptor, "section", None) or section
-    if field_section:
-        field_values = resolve_dotted_section(file_data, field_section)
-    else:
-        field_values = file_data
+    field_values = resolve_dotted_section(file_data, field_section) if field_section else file_data
 
     file_key = _get_file_key(name, descriptor, field_section)
 
@@ -431,7 +427,7 @@ def _resolve_all_fields(
     is_set: dict[str, bool] = {}
     coercion_errors: list[str] = []
 
-    for name, descriptor in cls._fields.items():
+    for name, descriptor in cls._fields.items():  # type: ignore[attr-defined]
         value, was_set, error = _resolve_single_field(
             name, descriptor, sources, file_data, section, type_hints
         )
@@ -462,7 +458,7 @@ def _create_config_instance(
     Returns:
         Populated instance of cls.
     """
-    instance = cls.__new__(cls)
+    instance = cls.__new__(cls)  # type: ignore[call-overload]
     for name, value in resolved.items():
         setattr(instance, name, value)
     instance._is_set = is_set
@@ -493,8 +489,8 @@ def _run_validation(
     Raises:
         ValueError: If any validation errors exist.
     """
-    validator_errors = run_validators(cls._fields, resolved, instance)
-    required_errors = validate_required(cls._fields, resolved)
+    validator_errors = run_validators(cls._fields, resolved, instance)  # type: ignore[attr-defined]
+    required_errors = validate_required(cls._fields, resolved)  # type: ignore[attr-defined]
     all_errors = coercion_errors + validator_errors + required_errors
     collect_errors(all_errors)
 
@@ -514,10 +510,10 @@ def _get_file_key(name: str, descriptor: Any, section: str | None) -> str:
         The key string to use in file data lookup.
     """
     if section and descriptor.flags:
-        first_flag = descriptor.flags[0].lstrip("-")
+        first_flag: str = descriptor.flags[0].lstrip("-")
         prefix = section + "."
         if first_flag.startswith(prefix):
-            return first_flag[len(prefix):]
+            return first_flag[len(prefix) :]
     return name
 
 
